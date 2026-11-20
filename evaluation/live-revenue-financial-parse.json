@@ -1,0 +1,312 @@
+{
+  "model": "openai/gpt-5-mini",
+  "request_schemas": [
+    "FinancialAcceleration",
+    "Plan"
+  ],
+  "status": "Complete",
+  "active_seconds": 7.625,
+  "lookups": 2,
+  "parsed": {
+    "claims": [
+      {
+        "id": "c1",
+        "label": "Microsoft\u2019s revenue growth accelerated in FY2024",
+        "kind": "financial",
+        "entities": [
+          "MSFT"
+        ],
+        "metric": "revenue",
+        "period": {
+          "year": 2024,
+          "quarter": null
+        },
+        "comparison_period": null,
+        "measure": "acceleration",
+        "assertion": "positive",
+        "target": null,
+        "target_unit": null,
+        "target_precision": 2,
+        "reported_values": [],
+        "figures": [],
+        "event": null,
+        "event_date": null,
+        "series": null,
+        "window_start": null,
+        "window_end": null,
+        "latest": false,
+        "quarterly": false,
+        "basis": "reported",
+        "scope": "consolidated"
+      }
+    ],
+    "carried": []
+  },
+  "report": {
+    "overall": "Supported",
+    "conclusion": "MSFT FY2023 growth: 6.88% \u00b7 MSFT FY2024 growth: 15.67% \u00b7 MSFT FY2024 acceleration: 8.79 pp.",
+    "findings": [
+      {
+        "claim_id": "c1",
+        "label": "Microsoft\u2019s revenue growth accelerated in FY2024",
+        "verdict": "Supported",
+        "reason": "MSFT FY2023 growth: 6.88% \u00b7 MSFT FY2024 growth: 15.67% \u00b7 MSFT FY2024 acceleration: 8.79 pp.",
+        "evidence_ids": [
+          "1d995e49aee4284d961dd085",
+          "166ee55fe52dafdc93ca596f",
+          "375cf632ad281765210b2b0c"
+        ],
+        "calculations": [
+          {
+            "label": "MSFT FY2023 growth",
+            "formula": "(Current \u2212 prior) \u00f7 prior \u00d7 100",
+            "operands": [
+              {
+                "label": "MSFT Revenue FY2022",
+                "value": "198270000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "1d995e49aee4284d961dd085"
+                ]
+              },
+              {
+                "label": "MSFT Revenue FY2023",
+                "value": "211915000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "166ee55fe52dafdc93ca596f"
+                ]
+              }
+            ],
+            "result": "6.882029555656428103091743582",
+            "unit": "%",
+            "evidence_ids": [
+              "1d995e49aee4284d961dd085",
+              "166ee55fe52dafdc93ca596f"
+            ]
+          },
+          {
+            "label": "MSFT FY2024 growth",
+            "formula": "(Current \u2212 prior) \u00f7 prior \u00d7 100",
+            "operands": [
+              {
+                "label": "MSFT Revenue FY2023",
+                "value": "211915000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "166ee55fe52dafdc93ca596f"
+                ]
+              },
+              {
+                "label": "MSFT Revenue FY2024",
+                "value": "245122000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "375cf632ad281765210b2b0c"
+                ]
+              }
+            ],
+            "result": "15.66996201307127857867541231",
+            "unit": "%",
+            "evidence_ids": [
+              "166ee55fe52dafdc93ca596f",
+              "375cf632ad281765210b2b0c"
+            ]
+          },
+          {
+            "label": "MSFT FY2024 acceleration",
+            "formula": "Current YoY growth \u2212 prior YoY growth",
+            "operands": [
+              {
+                "label": "MSFT Revenue FY2022",
+                "value": "198270000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "1d995e49aee4284d961dd085"
+                ]
+              },
+              {
+                "label": "MSFT Revenue FY2023",
+                "value": "211915000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "166ee55fe52dafdc93ca596f"
+                ]
+              },
+              {
+                "label": "MSFT Revenue FY2024",
+                "value": "245122000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "375cf632ad281765210b2b0c"
+                ]
+              }
+            ],
+            "result": "8.787932457414850475583668728",
+            "unit": "pp",
+            "evidence_ids": [
+              "1d995e49aee4284d961dd085",
+              "166ee55fe52dafdc93ca596f",
+              "375cf632ad281765210b2b0c"
+            ]
+          }
+        ]
+      }
+    ],
+    "evidence_ids": [
+      "1d995e49aee4284d961dd085",
+      "166ee55fe52dafdc93ca596f",
+      "375cf632ad281765210b2b0c"
+    ],
+    "timeline": [],
+    "limitations": [],
+    "carried": [],
+    "reused_sources": [],
+    "cutoff": "2026-11-20T04:18:07.534059+00:00"
+  },
+  "error": null,
+  "evidence": [
+    {
+      "id": "1d995e49aee4284d961dd085",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:18:15.044935Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "revenue",
+      "fiscal_year": 2022,
+      "quarter": null,
+      "start": "2021-07-01",
+      "end": "2022-06-30",
+      "value": "198270000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "166ee55fe52dafdc93ca596f",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:18:15.044935Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "revenue",
+      "fiscal_year": 2023,
+      "quarter": null,
+      "start": "2022-07-01",
+      "end": "2023-06-30",
+      "value": "211915000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "375cf632ad281765210b2b0c",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:18:15.044935Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "revenue",
+      "fiscal_year": 2024,
+      "quarter": null,
+      "start": "2023-07-01",
+      "end": "2024-06-30",
+      "value": "245122000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    }
+  ],
+  "stage_results": [
+    {
+      "stage": "Parse",
+      "outcome": "started",
+      "message": null
+    },
+    {
+      "stage": "Parse",
+      "outcome": "complete",
+      "message": null
+    },
+    {
+      "stage": "Plan",
+      "outcome": "started",
+      "message": null
+    },
+    {
+      "stage": "Plan",
+      "outcome": "complete",
+      "message": null
+    },
+    {
+      "stage": "Retrieve",
+      "outcome": "started",
+      "message": null
+    },
+    {
+      "stage": "Retrieve",
+      "outcome": "complete",
+      "message": null
+    },
+    {
+      "stage": "Verify",
+      "outcome": "started",
+      "message": null
+    },
+    {
+      "stage": "Verify",
+      "outcome": "complete",
+      "message": null
+    },
+    {
+      "stage": "Report",
+      "outcome": "started",
+      "message": null
+    },
+    {
+      "stage": "Report",
+      "outcome": "complete",
+      "message": null
+    }
+  ]
+}

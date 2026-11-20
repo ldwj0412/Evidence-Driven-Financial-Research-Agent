@@ -1,0 +1,112 @@
+{
+  "attempts": [
+    {
+      "mode": "live-smoke",
+      "live_timing": {
+        "count": 1,
+        "median_seconds": 19.141
+      },
+      "runs": [
+        {
+          "id": "quarterly_eps",
+          "status": "Failed",
+          "active_seconds": 19.141,
+          "saved_read_seconds": 0.00294,
+          "counts": {
+            "lookups": 0,
+            "models": 1,
+            "reused": 0,
+            "cache_hits": 0,
+            "followups": 0,
+            "retries": 0
+          },
+          "verdict": null,
+          "error": "OpenRouter did not return valid Parse output. Check the selected model.",
+          "model_usage": [
+            {
+              "model": "openai/gpt-5-mini",
+              "routed_provider": "OpenAI",
+              "usage": {
+                "prompt_tokens": 1728,
+                "completion_tokens": 1434,
+                "total_tokens": 3162
+              }
+            }
+          ],
+          "limitations": [],
+          "findings": [],
+          "lookup_issues": [
+            {
+              "stage": "Parse",
+              "outcome": "error",
+              "message": "OpenRouter did not return valid Parse output. Check the selected model."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "live-smoke",
+      "live_timing": {
+        "count": 1,
+        "median_seconds": 41.078
+      },
+      "runs": [
+        {
+          "id": "quarterly_eps",
+          "status": "Complete",
+          "active_seconds": 41.078,
+          "saved_read_seconds": 0.00352,
+          "counts": {
+            "lookups": 4,
+            "models": 3,
+            "reused": 0,
+            "cache_hits": 0,
+            "followups": 1,
+            "retries": 0
+          },
+          "verdict": "Unresolved",
+          "error": null,
+          "model_usage": [
+            {
+              "model": "openai/gpt-5-mini",
+              "routed_provider": "OpenAI",
+              "usage": {
+                "prompt_tokens": 1728,
+                "completion_tokens": 1290,
+                "total_tokens": 3018
+              }
+            },
+            {
+              "model": "openai/gpt-5-mini",
+              "routed_provider": "OpenAI",
+              "usage": {
+                "prompt_tokens": 798,
+                "completion_tokens": 379,
+                "total_tokens": 1177
+              }
+            },
+            {
+              "model": "openai/gpt-5-mini",
+              "routed_provider": "OpenAI",
+              "usage": {
+                "prompt_tokens": 925,
+                "completion_tokens": 411,
+                "total_tokens": 1336
+              }
+            }
+          ],
+          "limitations": [],
+          "findings": [
+            {
+              "claim": "AAPL diluted_eps FY2024 Q4",
+              "reason": "Missing comparable diluted eps for AAPL FY2024 Q4.",
+              "verdict": "Unresolved"
+            }
+          ],
+          "lookup_issues": []
+        }
+      ]
+    }
+  ]
+}

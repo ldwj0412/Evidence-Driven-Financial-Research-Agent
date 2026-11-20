@@ -1,0 +1,248 @@
+{
+  "mode": "live-smoke",
+  "live_timing": {
+    "count": 6,
+    "median_seconds": 12.094
+  },
+  "runs": [
+    {
+      "id": "revenue",
+      "status": "Failed",
+      "active_seconds": 10.375,
+      "saved_read_seconds": 0.00312,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": "OpenRouter did not return valid Parse output. Check the selected model.",
+      "model_usage": [
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 642,
+            "completion_tokens": 475,
+            "total_tokens": 1117
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter did not return valid Parse output. Check the selected model."
+        }
+      ]
+    },
+    {
+      "id": "conflict",
+      "status": "Failed",
+      "active_seconds": 13.094,
+      "saved_read_seconds": 0.00336,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": "OpenRouter did not return valid Parse output. Check the selected model.",
+      "model_usage": [
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 653,
+            "completion_tokens": 545,
+            "total_tokens": 1198
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter did not return valid Parse output. Check the selected model."
+        }
+      ]
+    },
+    {
+      "id": "rates",
+      "status": "Failed",
+      "active_seconds": 26.969,
+      "saved_read_seconds": 0.00334,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter did not return valid Parse output. Check the selected model.",
+      "model_usage": [
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 644,
+            "completion_tokens": 695,
+            "total_tokens": 1339
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter did not return valid Parse output. Check the selected model."
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "status": "Complete",
+      "active_seconds": 19.641,
+      "saved_read_seconds": 0.00338,
+      "counts": {
+        "lookups": 5,
+        "models": 3,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 652,
+            "completion_tokens": 302,
+            "total_tokens": 954
+          }
+        },
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 753,
+            "completion_tokens": 255,
+            "total_tokens": 1008
+          }
+        },
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 1981,
+            "completion_tokens": 114,
+            "total_tokens": 2095
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "event_description",
+          "reason": "Dated source evidence documents the event.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": []
+    },
+    {
+      "id": "profit",
+      "status": "Failed",
+      "active_seconds": 11.094,
+      "saved_read_seconds": 0.00293,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": "OpenRouter did not return valid Parse output. Check the selected model.",
+      "model_usage": [
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 635,
+            "completion_tokens": 573,
+            "total_tokens": 1208
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter did not return valid Parse output. Check the selected model."
+        }
+      ]
+    },
+    {
+      "id": "quarterly_eps",
+      "status": "Failed",
+      "active_seconds": 10.797,
+      "saved_read_seconds": 0.00347,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": "OpenRouter did not return valid Parse output. Check the selected model.",
+      "model_usage": [
+        {
+          "model": "qwen/qwen3.7-plus",
+          "routed_provider": "Alibaba",
+          "usage": {
+            "prompt_tokens": 645,
+            "completion_tokens": 512,
+            "total_tokens": 1157
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter did not return valid Parse output. Check the selected model."
+        }
+      ]
+    }
+  ]
+}

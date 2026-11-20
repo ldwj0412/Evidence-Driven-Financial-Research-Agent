@@ -1,0 +1,377 @@
+{
+  "mode": "live-smoke",
+  "live_timing": {
+    "count": 6,
+    "median_seconds": 20.1095
+  },
+  "runs": [
+    {
+      "id": "cached_operating_income_followup",
+      "status": "Waiting for clarification",
+      "active_seconds": 14.625,
+      "saved_read_seconds": 0,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1907,
+            "completion_tokens": 1615,
+            "total_tokens": 3522
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": []
+    },
+    {
+      "id": "revenue",
+      "status": "Complete",
+      "active_seconds": 7.031,
+      "saved_read_seconds": 0.00325,
+      "counts": {
+        "lookups": 2,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 261,
+            "completion_tokens": 169,
+            "total_tokens": 430
+          }
+        },
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 818,
+            "completion_tokens": 271,
+            "total_tokens": 1089
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "Microsoft\u2019s FY2024 revenue growth accelerated",
+          "reason": "MSFT FY2023 growth: 6.88% \u00b7 MSFT FY2024 growth: 15.67% \u00b7 MSFT FY2024 acceleration: 8.79 pp.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": []
+    },
+    {
+      "id": "conflict",
+      "status": "Complete",
+      "active_seconds": 18.609,
+      "saved_read_seconds": 0.00326,
+      "counts": {
+        "lookups": 4,
+        "models": 3,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 1,
+        "retries": 0
+      },
+      "verdict": "Contradicted",
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 270,
+            "completion_tokens": 227,
+            "total_tokens": 497
+          }
+        },
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 812,
+            "completion_tokens": 405,
+            "total_tokens": 1217
+          }
+        },
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 941,
+            "completion_tokens": 479,
+            "total_tokens": 1420
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "Microsoft\u2019s FY2024 revenue growth figures conflict",
+          "reason": "16% as reported and 15% in constant currency use different measurement bases.",
+          "verdict": "Contradicted"
+        }
+      ],
+      "lookup_issues": []
+    },
+    {
+      "id": "rates",
+      "status": "Failed",
+      "active_seconds": 50.218,
+      "saved_read_seconds": 0.00327,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "status": "Waiting for clarification",
+      "active_seconds": 14.687,
+      "saved_read_seconds": 0.00332,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1756,
+            "completion_tokens": 1402,
+            "total_tokens": 3158
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [],
+      "clarification": {
+        "request": {
+          "message": "You asked about Microsoft\u2019s FY2024 earnings reported on July 30, 2024. Which financial metric(s) should I report (reported, consolidated)?",
+          "fields": [
+            {
+              "name": "metric",
+              "label": "Select metric(s) for Microsoft FY2024",
+              "control": "select",
+              "options": [
+                {
+                  "value": "revenue",
+                  "label": "Revenue (consolidated, reported)"
+                },
+                {
+                  "value": "gross_profit",
+                  "label": "Gross profit (consolidated, reported)"
+                },
+                {
+                  "value": "operating_income",
+                  "label": "Operating income (consolidated, reported)"
+                },
+                {
+                  "value": "net_income",
+                  "label": "Net income (consolidated, reported)"
+                },
+                {
+                  "value": "diluted_eps",
+                  "label": "Diluted EPS (consolidated, reported, USD/share)"
+                }
+              ]
+            }
+          ]
+        },
+        "answers": null
+      }
+    },
+    {
+      "id": "profit",
+      "status": "Waiting for clarification",
+      "active_seconds": 21.61,
+      "saved_read_seconds": 0.00315,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1744,
+            "completion_tokens": 2093,
+            "total_tokens": 3837
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [],
+      "clarification": {
+        "request": {
+          "message": "Which profit metric and which periods should I compare for Microsoft (MSFT)?",
+          "fields": [
+            {
+              "name": "metric",
+              "label": "Which profit metric do you mean?",
+              "control": "select",
+              "options": [
+                {
+                  "value": "gross_profit",
+                  "label": "Gross profit"
+                },
+                {
+                  "value": "operating_income",
+                  "label": "Operating income (operating profit)"
+                },
+                {
+                  "value": "net_income",
+                  "label": "Net income (profit after tax)"
+                },
+                {
+                  "value": "diluted_eps",
+                  "label": "Diluted EPS (USD/share)"
+                }
+              ]
+            },
+            {
+              "name": "comparison",
+              "label": "Compare which periods?",
+              "control": "select",
+              "options": [
+                {
+                  "value": "latest_year_vs_prior",
+                  "label": "Most recent fiscal year vs prior fiscal year"
+                },
+                {
+                  "value": "latest_qtr_vs_prior_qtr",
+                  "label": "Most recent fiscal quarter vs prior-year same quarter"
+                },
+                {
+                  "value": "specific_years",
+                  "label": "Specific fiscal years (I will provide years next)"
+                },
+                {
+                  "value": "specific_quarters",
+                  "label": "Specific fiscal quarters (I will provide year and quarter next)"
+                }
+              ]
+            }
+          ]
+        },
+        "answers": null
+      }
+    },
+    {
+      "id": "quarterly_eps",
+      "status": "Complete",
+      "active_seconds": 26.703,
+      "saved_read_seconds": 0.00332,
+      "counts": {
+        "lookups": 4,
+        "models": 3,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 1,
+        "retries": 0
+      },
+      "verdict": "Unresolved",
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1752,
+            "completion_tokens": 1114,
+            "total_tokens": 2866
+          }
+        },
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 802,
+            "completion_tokens": 458,
+            "total_tokens": 1260
+          }
+        },
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 934,
+            "completion_tokens": 477,
+            "total_tokens": 1411
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "AAPL FY2024 Q4 diluted EPS (reported, consolidated)",
+          "reason": "Missing comparable diluted eps for AAPL FY2024 Q4.",
+          "verdict": "Unresolved"
+        }
+      ],
+      "lookup_issues": []
+    }
+  ]
+}

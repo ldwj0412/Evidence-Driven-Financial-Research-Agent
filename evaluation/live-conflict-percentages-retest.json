@@ -1,0 +1,1531 @@
+{
+  "question": "Why do two sources say Microsoft\u2019s FY2024 revenue grew 16% and 15%?",
+  "status": "Complete",
+  "active_seconds": 15.875,
+  "counts": {
+    "lookups": 4,
+    "models": 3,
+    "reused": 0,
+    "cache_hits": 0,
+    "followups": 1,
+    "retries": 0
+  },
+  "events": [
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 1,
+      "timestamp": "2026-11-20T04:22:01.486094+00:00",
+      "stage": "Parse",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 2,
+      "timestamp": "2026-11-20T04:22:01.491094+00:00",
+      "stage": "Parse",
+      "pass_no": 0,
+      "kind": "model",
+      "outcome": "started",
+      "data": {
+        "tool": "OpenRouter Chat Completions",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "purpose": "Parse",
+        "parameters": {},
+        "model": "openai/gpt-5-mini",
+        "attempt": 1
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 3,
+      "timestamp": "2026-11-20T04:22:05.219337+00:00",
+      "stage": "Parse",
+      "pass_no": 0,
+      "kind": "model",
+      "outcome": "complete",
+      "data": {
+        "tool": "OpenRouter Chat Completions",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "purpose": "Parse",
+        "parameters": {},
+        "model": "openai/gpt-5-mini",
+        "attempt": 1,
+        "elapsed_ms": 3735,
+        "bytes": 5622
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 4,
+      "timestamp": "2026-11-20T04:22:05.223338+00:00",
+      "stage": "Parse",
+      "pass_no": 0,
+      "kind": "model",
+      "outcome": "metadata",
+      "data": {
+        "model": "openai/gpt-5-mini",
+        "routed_provider": "OpenAI",
+        "usage": {
+          "prompt_tokens": 270,
+          "completion_tokens": 142,
+          "total_tokens": 412
+        }
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 5,
+      "timestamp": "2026-11-20T04:22:05.232337+00:00",
+      "stage": "Parse",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "output": {
+          "claims": [
+            {
+              "id": "c1",
+              "label": "Microsoft\u2019s FY2024 revenue growth figures conflict",
+              "kind": "conflict",
+              "entities": [
+                "MSFT"
+              ],
+              "metric": "revenue",
+              "period": {
+                "year": 2024,
+                "quarter": null
+              },
+              "comparison_period": null,
+              "measure": "growth",
+              "assertion": "describe",
+              "target": null,
+              "target_unit": null,
+              "target_precision": 2,
+              "reported_values": [
+                "16",
+                "15"
+              ],
+              "figures": [],
+              "event": null,
+              "event_date": null,
+              "series": null,
+              "window_start": null,
+              "window_end": null,
+              "latest": false,
+              "quarterly": false,
+              "basis": "reported",
+              "scope": "consolidated"
+            }
+          ],
+          "clarification": null,
+          "as_of": null,
+          "carried": [],
+          "out_of_scope": null
+        },
+        "cutoff": "2026-11-20T04:22:01.409094+00:00"
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 6,
+      "timestamp": "2026-11-20T04:22:05.236337+00:00",
+      "stage": "Plan",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 7,
+      "timestamp": "2026-11-20T04:22:05.241336+00:00",
+      "stage": "Plan",
+      "pass_no": 0,
+      "kind": "model",
+      "outcome": "started",
+      "data": {
+        "tool": "OpenRouter Chat Completions",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "purpose": "Plan",
+        "parameters": {},
+        "model": "openai/gpt-5-mini",
+        "attempt": 1
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 8,
+      "timestamp": "2026-11-20T04:22:09.529097+00:00",
+      "stage": "Plan",
+      "pass_no": 0,
+      "kind": "model",
+      "outcome": "complete",
+      "data": {
+        "tool": "OpenRouter Chat Completions",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "purpose": "Plan",
+        "parameters": {},
+        "model": "openai/gpt-5-mini",
+        "attempt": 1,
+        "elapsed_ms": 4281,
+        "bytes": 6584
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 9,
+      "timestamp": "2026-11-20T04:22:09.534097+00:00",
+      "stage": "Plan",
+      "pass_no": 0,
+      "kind": "model",
+      "outcome": "metadata",
+      "data": {
+        "model": "openai/gpt-5-mini",
+        "routed_provider": "OpenAI",
+        "usage": {
+          "prompt_tokens": 812,
+          "completion_tokens": 346,
+          "total_tokens": 1158
+        }
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 10,
+      "timestamp": "2026-11-20T04:22:09.538096+00:00",
+      "stage": "Plan",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "output": {
+          "actions": [
+            {
+              "source": "sec",
+              "operation": "financials",
+              "claim_ids": [
+                "c1"
+              ],
+              "purpose": "Retrieve Microsoft consolidated revenues for FY2023 and FY2024 to compute and confirm reported growth.",
+              "entity": "MSFT",
+              "periods": [
+                {
+                  "year": 2023,
+                  "quarter": null
+                },
+                {
+                  "year": 2024,
+                  "quarter": null
+                }
+              ],
+              "series": null,
+              "start": null,
+              "end": null,
+              "query": null
+            }
+          ]
+        },
+        "gaps": []
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 11,
+      "timestamp": "2026-11-20T04:22:09.542097+00:00",
+      "stage": "Retrieve",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 12,
+      "timestamp": "2026-11-20T04:22:09.550096+00:00",
+      "stage": "Retrieve",
+      "pass_no": 0,
+      "kind": "tool",
+      "outcome": "started",
+      "data": {
+        "tool": "SEC Submissions",
+        "url": "https://data.sec.gov/submissions/CIK0000789019.json",
+        "purpose": "Retrieve Microsoft consolidated revenues for FY2023 and FY2024 to compute and confirm reported growth.",
+        "parameters": {},
+        "attempt": 1
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 13,
+      "timestamp": "2026-11-20T04:22:09.553754+00:00",
+      "stage": "Retrieve",
+      "pass_no": 0,
+      "kind": "tool",
+      "outcome": "started",
+      "data": {
+        "tool": "SEC Company Facts",
+        "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+        "purpose": "Retrieve Microsoft consolidated revenues for FY2023 and FY2024 to compute and confirm reported growth.",
+        "parameters": {},
+        "attempt": 1
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 14,
+      "timestamp": "2026-11-20T04:22:09.829114+00:00",
+      "stage": "Retrieve",
+      "pass_no": 0,
+      "kind": "tool",
+      "outcome": "complete",
+      "data": {
+        "tool": "SEC Submissions",
+        "url": "https://data.sec.gov/submissions/CIK0000789019.json",
+        "purpose": "Retrieve Microsoft consolidated revenues for FY2023 and FY2024 to compute and confirm reported growth.",
+        "parameters": {},
+        "attempt": 1,
+        "elapsed_ms": 281,
+        "bytes": 186831
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 15,
+      "timestamp": "2026-11-20T04:22:10.256861+00:00",
+      "stage": "Retrieve",
+      "pass_no": 0,
+      "kind": "tool",
+      "outcome": "complete",
+      "data": {
+        "tool": "SEC Company Facts",
+        "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+        "purpose": "Retrieve Microsoft consolidated revenues for FY2023 and FY2024 to compute and confirm reported growth.",
+        "parameters": {},
+        "attempt": 1,
+        "elapsed_ms": 703,
+        "bytes": 4938072
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 16,
+      "timestamp": "2026-11-20T04:22:10.365860+00:00",
+      "stage": "Retrieve",
+      "pass_no": 0,
+      "kind": "lookup",
+      "outcome": "complete",
+      "data": {
+        "action": {
+          "source": "sec",
+          "operation": "financials",
+          "claim_ids": [
+            "c1"
+          ],
+          "purpose": "Retrieve Microsoft consolidated revenues for FY2023 and FY2024 to compute and confirm reported growth.",
+          "entity": "MSFT",
+          "periods": [
+            {
+              "year": 2023,
+              "quarter": null
+            },
+            {
+              "year": 2024,
+              "quarter": null
+            }
+          ],
+          "series": null,
+          "start": null,
+          "end": null,
+          "query": null
+        },
+        "evidence_ids": [
+          "166ee55fe52dafdc93ca596f",
+          "062c2e177e7beb54719a1c71",
+          "592a152e879435a6f34b7ded",
+          "9b32626f596a516e2069e24d",
+          "1fd6b4faf7829b314bf5a30f",
+          "86e124bfa517baeccc4ca5db",
+          "375cf632ad281765210b2b0c",
+          "4291fc392e3939583863b03e",
+          "5fe3d24706ab6d53cf91ef58",
+          "78a6cb376233a14b88a66faf",
+          "a69fdaf5059a88ae227b99ac",
+          "3482ea39874bf3cb9c18d763",
+          "1d995e49aee4284d961dd085",
+          "b3302d83c9e2b0dc45776a2e",
+          "6142ec7ca5cf5bbc55042541",
+          "5797c7752bb790135ea01273",
+          "3cdadcde591338d8d4884a9a",
+          "8c0187ab0eea08aea442efee"
+        ]
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 17,
+      "timestamp": "2026-11-20T04:22:10.372861+00:00",
+      "stage": "Retrieve",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "lookups": [
+          {
+            "action": {
+              "source": "sec",
+              "operation": "financials",
+              "claim_ids": [
+                "c1"
+              ],
+              "purpose": "Retrieve Microsoft consolidated revenues for FY2023 and FY2024 to compute and confirm reported growth.",
+              "entity": "MSFT",
+              "periods": [
+                {
+                  "year": 2023,
+                  "quarter": null
+                },
+                {
+                  "year": 2024,
+                  "quarter": null
+                }
+              ],
+              "series": null,
+              "start": null,
+              "end": null,
+              "query": null
+            },
+            "reused": false,
+            "retrieval": "lookup",
+            "records": 18,
+            "evidence_ids": [
+              "166ee55fe52dafdc93ca596f",
+              "062c2e177e7beb54719a1c71",
+              "592a152e879435a6f34b7ded",
+              "9b32626f596a516e2069e24d",
+              "1fd6b4faf7829b314bf5a30f",
+              "86e124bfa517baeccc4ca5db",
+              "375cf632ad281765210b2b0c",
+              "4291fc392e3939583863b03e",
+              "5fe3d24706ab6d53cf91ef58",
+              "78a6cb376233a14b88a66faf",
+              "a69fdaf5059a88ae227b99ac",
+              "3482ea39874bf3cb9c18d763",
+              "1d995e49aee4284d961dd085",
+              "b3302d83c9e2b0dc45776a2e",
+              "6142ec7ca5cf5bbc55042541",
+              "5797c7752bb790135ea01273",
+              "3cdadcde591338d8d4884a9a",
+              "8c0187ab0eea08aea442efee"
+            ],
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 18,
+      "timestamp": "2026-11-20T04:22:10.376860+00:00",
+      "stage": "Verify",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 19,
+      "timestamp": "2026-11-20T04:22:10.384861+00:00",
+      "stage": "Verify",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "findings": [
+          {
+            "claim_id": "c1",
+            "label": "Microsoft\u2019s FY2024 revenue growth figures conflict",
+            "verdict": "Unresolved",
+            "reason": "The measurement basis, period, or scope of one of the figures is still missing.",
+            "evidence_ids": [
+              "166ee55fe52dafdc93ca596f",
+              "375cf632ad281765210b2b0c"
+            ],
+            "calculations": [
+              {
+                "label": "MSFT FY2024 growth",
+                "formula": "(Current \u2212 prior) \u00f7 prior \u00d7 100",
+                "operands": [
+                  {
+                    "label": "MSFT Revenue FY2023",
+                    "value": "211915000000",
+                    "unit": "USD",
+                    "evidence_ids": [
+                      "166ee55fe52dafdc93ca596f"
+                    ]
+                  },
+                  {
+                    "label": "MSFT Revenue FY2024",
+                    "value": "245122000000",
+                    "unit": "USD",
+                    "evidence_ids": [
+                      "375cf632ad281765210b2b0c"
+                    ]
+                  }
+                ],
+                "result": "15.66996201307127857867541231",
+                "unit": "%",
+                "evidence_ids": [
+                  "166ee55fe52dafdc93ca596f",
+                  "375cf632ad281765210b2b0c"
+                ]
+              }
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "claim_id": "c1",
+            "operation": "release",
+            "reason": "The measurement basis, period, or scope of one of the figures is still missing."
+          }
+        ],
+        "attributions": []
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 20,
+      "timestamp": "2026-11-20T04:22:10.389861+00:00",
+      "stage": "Plan",
+      "pass_no": 1,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 21,
+      "timestamp": "2026-11-20T04:22:10.393859+00:00",
+      "stage": "Plan",
+      "pass_no": 1,
+      "kind": "model",
+      "outcome": "started",
+      "data": {
+        "tool": "OpenRouter Chat Completions",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "purpose": "Plan",
+        "parameters": {},
+        "model": "openai/gpt-5-mini",
+        "attempt": 1
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 22,
+      "timestamp": "2026-11-20T04:22:16.511367+00:00",
+      "stage": "Plan",
+      "pass_no": 1,
+      "kind": "model",
+      "outcome": "complete",
+      "data": {
+        "tool": "OpenRouter Chat Completions",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "purpose": "Plan",
+        "parameters": {},
+        "model": "openai/gpt-5-mini",
+        "attempt": 1,
+        "elapsed_ms": 6110,
+        "bytes": 9090
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 23,
+      "timestamp": "2026-11-20T04:22:16.515367+00:00",
+      "stage": "Plan",
+      "pass_no": 1,
+      "kind": "model",
+      "outcome": "metadata",
+      "data": {
+        "model": "openai/gpt-5-mini",
+        "routed_provider": "OpenAI",
+        "usage": {
+          "prompt_tokens": 941,
+          "completion_tokens": 523,
+          "total_tokens": 1464
+        }
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 24,
+      "timestamp": "2026-11-20T04:22:16.519369+00:00",
+      "stage": "Plan",
+      "pass_no": 1,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "output": {
+          "actions": [
+            {
+              "source": "sec",
+              "operation": "release",
+              "claim_ids": [
+                "c1"
+              ],
+              "purpose": "Check MSFT FY2024 earnings exhibit to confirm the reported revenue growth and whether it\u2019s reported or constant\u2011currency.",
+              "entity": "MSFT",
+              "periods": [
+                {
+                  "year": 2024,
+                  "quarter": null
+                }
+              ],
+              "series": null,
+              "start": null,
+              "end": null,
+              "query": "Revenue growth constant currency adjusted"
+            }
+          ]
+        },
+        "gaps": [
+          {
+            "claim_id": "c1",
+            "operation": "release",
+            "reason": "The measurement basis, period, or scope of one of the figures is still missing."
+          }
+        ]
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 25,
+      "timestamp": "2026-11-20T04:22:16.523367+00:00",
+      "stage": "Retrieve",
+      "pass_no": 1,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 26,
+      "timestamp": "2026-11-20T04:22:16.533370+00:00",
+      "stage": "Retrieve",
+      "pass_no": 1,
+      "kind": "tool",
+      "outcome": "started",
+      "data": {
+        "tool": "SEC filing archive",
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/0000950170-24-087835-index.htm",
+        "purpose": "Check MSFT FY2024 earnings exhibit to confirm the reported revenue growth and whether it\u2019s reported or constant\u2011currency.",
+        "parameters": {},
+        "attempt": 1
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 27,
+      "timestamp": "2026-11-20T04:22:16.800756+00:00",
+      "stage": "Retrieve",
+      "pass_no": 1,
+      "kind": "tool",
+      "outcome": "complete",
+      "data": {
+        "tool": "SEC filing archive",
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/0000950170-24-087835-index.htm",
+        "purpose": "Check MSFT FY2024 earnings exhibit to confirm the reported revenue growth and whether it\u2019s reported or constant\u2011currency.",
+        "parameters": {},
+        "attempt": 1,
+        "elapsed_ms": 266,
+        "bytes": 9184
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 28,
+      "timestamp": "2026-11-20T04:22:16.893494+00:00",
+      "stage": "Retrieve",
+      "pass_no": 1,
+      "kind": "tool",
+      "outcome": "started",
+      "data": {
+        "tool": "SEC filing archive",
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/msft-ex99_1.htm",
+        "purpose": "Check MSFT FY2024 earnings exhibit to confirm the reported revenue growth and whether it\u2019s reported or constant\u2011currency.",
+        "parameters": {},
+        "attempt": 1
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 29,
+      "timestamp": "2026-11-20T04:22:17.007494+00:00",
+      "stage": "Retrieve",
+      "pass_no": 1,
+      "kind": "tool",
+      "outcome": "complete",
+      "data": {
+        "tool": "SEC filing archive",
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/msft-ex99_1.htm",
+        "purpose": "Check MSFT FY2024 earnings exhibit to confirm the reported revenue growth and whether it\u2019s reported or constant\u2011currency.",
+        "parameters": {},
+        "attempt": 1,
+        "elapsed_ms": 110,
+        "bytes": 688047
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 30,
+      "timestamp": "2026-11-20T04:22:17.270634+00:00",
+      "stage": "Retrieve",
+      "pass_no": 1,
+      "kind": "lookup",
+      "outcome": "complete",
+      "data": {
+        "action": {
+          "source": "sec",
+          "operation": "release",
+          "claim_ids": [
+            "c1"
+          ],
+          "purpose": "Check MSFT FY2024 earnings exhibit to confirm the reported revenue growth and whether it\u2019s reported or constant\u2011currency.",
+          "entity": "MSFT",
+          "periods": [
+            {
+              "year": 2024,
+              "quarter": null
+            }
+          ],
+          "series": null,
+          "start": null,
+          "end": null,
+          "query": "Revenue growth constant currency adjusted"
+        },
+        "evidence_ids": [
+          "23e9c70bdf60ab6a819791f1"
+        ]
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 31,
+      "timestamp": "2026-11-20T04:22:17.278635+00:00",
+      "stage": "Retrieve",
+      "pass_no": 1,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "lookups": [
+          {
+            "action": {
+              "source": "sec",
+              "operation": "release",
+              "claim_ids": [
+                "c1"
+              ],
+              "purpose": "Check MSFT FY2024 earnings exhibit to confirm the reported revenue growth and whether it\u2019s reported or constant\u2011currency.",
+              "entity": "MSFT",
+              "periods": [
+                {
+                  "year": 2024,
+                  "quarter": null
+                }
+              ],
+              "series": null,
+              "start": null,
+              "end": null,
+              "query": "Revenue growth constant currency adjusted"
+            },
+            "reused": false,
+            "retrieval": "lookup",
+            "records": 1,
+            "evidence_ids": [
+              "23e9c70bdf60ab6a819791f1"
+            ],
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 32,
+      "timestamp": "2026-11-20T04:22:17.282634+00:00",
+      "stage": "Verify",
+      "pass_no": 1,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 33,
+      "timestamp": "2026-11-20T04:22:17.291634+00:00",
+      "stage": "Verify",
+      "pass_no": 1,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "findings": [
+          {
+            "claim_id": "c1",
+            "label": "Microsoft\u2019s FY2024 revenue growth figures conflict",
+            "verdict": "Contradicted",
+            "reason": "16% as reported and 15% in constant currency use different measurement bases.",
+            "evidence_ids": [
+              "23e9c70bdf60ab6a819791f1",
+              "166ee55fe52dafdc93ca596f",
+              "375cf632ad281765210b2b0c"
+            ],
+            "calculations": [
+              {
+                "label": "MSFT FY2024 growth",
+                "formula": "(Current \u2212 prior) \u00f7 prior \u00d7 100",
+                "operands": [
+                  {
+                    "label": "MSFT Revenue FY2023",
+                    "value": "211915000000",
+                    "unit": "USD",
+                    "evidence_ids": [
+                      "166ee55fe52dafdc93ca596f"
+                    ]
+                  },
+                  {
+                    "label": "MSFT Revenue FY2024",
+                    "value": "245122000000",
+                    "unit": "USD",
+                    "evidence_ids": [
+                      "375cf632ad281765210b2b0c"
+                    ]
+                  }
+                ],
+                "result": "15.66996201307127857867541231",
+                "unit": "%",
+                "evidence_ids": [
+                  "166ee55fe52dafdc93ca596f",
+                  "375cf632ad281765210b2b0c"
+                ]
+              }
+            ]
+          }
+        ],
+        "gaps": [],
+        "attributions": []
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 34,
+      "timestamp": "2026-11-20T04:22:17.295635+00:00",
+      "stage": "Report",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "started",
+      "data": {}
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 35,
+      "timestamp": "2026-11-20T04:22:17.299635+00:00",
+      "stage": "Report",
+      "pass_no": 0,
+      "kind": "stage",
+      "outcome": "complete",
+      "data": {
+        "overall": "Contradicted",
+        "conclusion": "16% as reported and 15% in constant currency use different measurement bases.",
+        "evidence_ids": [
+          "23e9c70bdf60ab6a819791f1",
+          "166ee55fe52dafdc93ca596f",
+          "375cf632ad281765210b2b0c"
+        ]
+      }
+    },
+    {
+      "run_id": "9c5a0c1f695b4df79d3ef94e95ea2d8e",
+      "sequence": 36,
+      "timestamp": "2026-11-20T04:22:17.308635+00:00",
+      "stage": "Report",
+      "pass_no": 0,
+      "kind": "status",
+      "outcome": "complete",
+      "data": {
+        "verdict": "Contradicted",
+        "active_seconds": 15.875
+      }
+    }
+  ],
+  "model": "openai/gpt-5-mini",
+  "parsed": {
+    "claims": [
+      {
+        "id": "c1",
+        "label": "Microsoft\u2019s FY2024 revenue growth figures conflict",
+        "kind": "conflict",
+        "entities": [
+          "MSFT"
+        ],
+        "metric": "revenue",
+        "period": {
+          "year": 2024,
+          "quarter": null
+        },
+        "comparison_period": null,
+        "measure": "growth",
+        "assertion": "describe",
+        "target": null,
+        "target_unit": null,
+        "target_precision": 2,
+        "reported_values": [
+          "16",
+          "15"
+        ],
+        "figures": [],
+        "event": null,
+        "event_date": null,
+        "series": null,
+        "window_start": null,
+        "window_end": null,
+        "latest": false,
+        "quarterly": false,
+        "basis": "reported",
+        "scope": "consolidated"
+      }
+    ],
+    "carried": []
+  },
+  "report": {
+    "overall": "Contradicted",
+    "conclusion": "16% as reported and 15% in constant currency use different measurement bases.",
+    "findings": [
+      {
+        "claim_id": "c1",
+        "label": "Microsoft\u2019s FY2024 revenue growth figures conflict",
+        "verdict": "Contradicted",
+        "reason": "16% as reported and 15% in constant currency use different measurement bases.",
+        "evidence_ids": [
+          "23e9c70bdf60ab6a819791f1",
+          "166ee55fe52dafdc93ca596f",
+          "375cf632ad281765210b2b0c"
+        ],
+        "calculations": [
+          {
+            "label": "MSFT FY2024 growth",
+            "formula": "(Current \u2212 prior) \u00f7 prior \u00d7 100",
+            "operands": [
+              {
+                "label": "MSFT Revenue FY2023",
+                "value": "211915000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "166ee55fe52dafdc93ca596f"
+                ]
+              },
+              {
+                "label": "MSFT Revenue FY2024",
+                "value": "245122000000",
+                "unit": "USD",
+                "evidence_ids": [
+                  "375cf632ad281765210b2b0c"
+                ]
+              }
+            ],
+            "result": "15.66996201307127857867541231",
+            "unit": "%",
+            "evidence_ids": [
+              "166ee55fe52dafdc93ca596f",
+              "375cf632ad281765210b2b0c"
+            ]
+          }
+        ]
+      }
+    ],
+    "evidence_ids": [
+      "23e9c70bdf60ab6a819791f1",
+      "166ee55fe52dafdc93ca596f",
+      "375cf632ad281765210b2b0c"
+    ],
+    "timeline": [],
+    "limitations": [],
+    "carried": [],
+    "reused_sources": [],
+    "cutoff": "2026-11-20T04:22:01.409094+00:00"
+  },
+  "error": null,
+  "evidence": [
+    {
+      "id": "166ee55fe52dafdc93ca596f",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "revenue",
+      "fiscal_year": 2023,
+      "quarter": null,
+      "start": "2022-07-01",
+      "end": "2023-06-30",
+      "value": "211915000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "062c2e177e7beb54719a1c71",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "gross_profit",
+      "fiscal_year": 2023,
+      "quarter": null,
+      "start": "2022-07-01",
+      "end": "2023-06-30",
+      "value": "146052000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "GrossProfit",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "592a152e879435a6f34b7ded",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "operating_income",
+      "fiscal_year": 2023,
+      "quarter": null,
+      "start": "2022-07-01",
+      "end": "2023-06-30",
+      "value": "88523000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "OperatingIncomeLoss",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "9b32626f596a516e2069e24d",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "net_income",
+      "fiscal_year": 2023,
+      "quarter": null,
+      "start": "2022-07-01",
+      "end": "2023-06-30",
+      "value": "72361000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "NetIncomeLoss",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "1fd6b4faf7829b314bf5a30f",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "diluted_eps",
+      "fiscal_year": 2023,
+      "quarter": null,
+      "start": "2022-07-01",
+      "end": "2023-06-30",
+      "value": "9.68",
+      "unit": "USD/share",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "EarningsPerShareDiluted",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "86e124bfa517baeccc4ca5db",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "cost_of_revenue",
+      "fiscal_year": 2023,
+      "quarter": null,
+      "start": "2022-07-01",
+      "end": "2023-06-30",
+      "value": "65863000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "CostOfGoodsAndServicesSold",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "375cf632ad281765210b2b0c",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "revenue",
+      "fiscal_year": 2024,
+      "quarter": null,
+      "start": "2023-07-01",
+      "end": "2024-06-30",
+      "value": "245122000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "4291fc392e3939583863b03e",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "gross_profit",
+      "fiscal_year": 2024,
+      "quarter": null,
+      "start": "2023-07-01",
+      "end": "2024-06-30",
+      "value": "171008000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "GrossProfit",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "5fe3d24706ab6d53cf91ef58",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "operating_income",
+      "fiscal_year": 2024,
+      "quarter": null,
+      "start": "2023-07-01",
+      "end": "2024-06-30",
+      "value": "109433000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "OperatingIncomeLoss",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "78a6cb376233a14b88a66faf",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "net_income",
+      "fiscal_year": 2024,
+      "quarter": null,
+      "start": "2023-07-01",
+      "end": "2024-06-30",
+      "value": "88136000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "NetIncomeLoss",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "a69fdaf5059a88ae227b99ac",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "diluted_eps",
+      "fiscal_year": 2024,
+      "quarter": null,
+      "start": "2023-07-01",
+      "end": "2024-06-30",
+      "value": "11.8",
+      "unit": "USD/share",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "EarningsPerShareDiluted",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "3482ea39874bf3cb9c18d763",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "cost_of_revenue",
+      "fiscal_year": 2024,
+      "quarter": null,
+      "start": "2023-07-01",
+      "end": "2024-06-30",
+      "value": "74114000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "CostOfGoodsAndServicesSold",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "1d995e49aee4284d961dd085",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "revenue",
+      "fiscal_year": 2022,
+      "quarter": null,
+      "start": "2021-07-01",
+      "end": "2022-06-30",
+      "value": "198270000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "b3302d83c9e2b0dc45776a2e",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "gross_profit",
+      "fiscal_year": 2022,
+      "quarter": null,
+      "start": "2021-07-01",
+      "end": "2022-06-30",
+      "value": "135620000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "GrossProfit",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "6142ec7ca5cf5bbc55042541",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "operating_income",
+      "fiscal_year": 2022,
+      "quarter": null,
+      "start": "2021-07-01",
+      "end": "2022-06-30",
+      "value": "83383000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "OperatingIncomeLoss",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "5797c7752bb790135ea01273",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "net_income",
+      "fiscal_year": 2022,
+      "quarter": null,
+      "start": "2021-07-01",
+      "end": "2022-06-30",
+      "value": "72738000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "NetIncomeLoss",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "3cdadcde591338d8d4884a9a",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "diluted_eps",
+      "fiscal_year": 2022,
+      "quarter": null,
+      "start": "2021-07-01",
+      "end": "2022-06-30",
+      "value": "9.65",
+      "unit": "USD/share",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "EarningsPerShareDiluted",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "8c0187ab0eea08aea442efee",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+      "title": "Microsoft Form 10-K",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:10.297860Z",
+      "available_at": "2024-07-30T20:06:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087843",
+      "form": "10-K",
+      "vintage": null,
+      "publisher": null,
+      "type": "fact",
+      "metric": "cost_of_revenue",
+      "fiscal_year": 2022,
+      "quarter": null,
+      "start": "2021-07-01",
+      "end": "2022-06-30",
+      "value": "62650000000",
+      "unit": "USD",
+      "currency": "USD",
+      "basis": "reported",
+      "scope": "consolidated",
+      "tag": "CostOfGoodsAndServicesSold",
+      "frequency": null,
+      "restatement": null,
+      "derivation": null,
+      "derived_from": []
+    },
+    {
+      "id": "23e9c70bdf60ab6a819791f1",
+      "source": "sec",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/msft-ex99_1.htm",
+      "title": "Microsoft earnings release",
+      "published": "2024-07-30",
+      "retrieved_at": "2026-11-20T04:22:17.264634Z",
+      "available_at": "2024-07-30T20:03:22Z",
+      "entity": "MSFT",
+      "accession": "0000950170-24-087835",
+      "form": "8-K exhibit",
+      "vintage": null,
+      "publisher": "Microsoft",
+      "type": "document",
+      "passages": [
+        "Revenue was $245.1 billion and increased 16% (up 15% in constant currency)",
+        "Operating income was $109.4 billion and increased 24%, and increased 22% non-GAAP (up 21% in constant currency)",
+        "The following table reconciles our financial results for the fiscal year ended June 30, 2024, reported in accordance with generally accepted accounting principles (GAAP) to non-GAAP financial results. Additional information regarding our non-GAAP definition is provided below. All growth comparisons relate to the corresponding period in the last fiscal year.",
+        "Microsoft Corp. today announced the following results for the fiscal year ended June 30, 2024, as compared to the corresponding period of last fiscal year:",
+        "Net income was $88.1 billion and increased 22%, and increased 20% non-GAAP",
+        "Diluted earnings per share was $11.80 and increased 22%, and increased 20% non-GAAP"
+      ],
+      "period": {
+        "year": 2024,
+        "quarter": null
+      },
+      "independent": false
+    }
+  ]
+}

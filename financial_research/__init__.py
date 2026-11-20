@@ -1,0 +1,1 @@
+"""Evidence-driven financial research."""

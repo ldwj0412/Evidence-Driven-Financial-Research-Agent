@@ -1,0 +1,775 @@
+{
+  "mode": "replay",
+  "split": "held_out",
+  "cases": 20,
+  "workflow": {
+    "verdicts": {
+      "correct": 24,
+      "total": 24,
+      "percent": 100.0
+    },
+    "financial_values": {
+      "correct": 14,
+      "total": 14,
+      "percent": 100.0
+    },
+    "citation_pairs": {
+      "correct": 38,
+      "total": 38,
+      "percent": 100.0
+    },
+    "conflict_cases": {
+      "correct": 5,
+      "total": 5,
+      "percent": 100.0
+    },
+    "uncertainty_cases": {
+      "correct": 3,
+      "total": 3,
+      "percent": 100.0
+    },
+    "unsupported_numerical_assertions": 0
+  },
+  "baseline": {
+    "status": "requires a configured OpenRouter key; run with --mode frozen"
+  },
+  "active_timing": {
+    "count": 20,
+    "median_seconds": 0.1405
+  },
+  "saved_read_timing": {
+    "count": 20,
+    "median_seconds": 0.0036
+  },
+  "runs": [
+    {
+      "id": "F01",
+      "status": "Complete",
+      "active_seconds": 0.157,
+      "saved_read_seconds": 0.00393,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "Was Apple\u2019s standalone FY2024 Q2 revenue $90.753 billion?",
+          "reason": "AAPL FY2024 Q2: $90.75B.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 1,
+        "citation_correct": 1,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "F02",
+      "status": "Complete",
+      "active_seconds": 0.11,
+      "saved_read_seconds": 0.00342,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "Was NVIDIA\u2019s FY2024 revenue $60.922 billion for the year ended January 28, 2024?",
+          "reason": "NVDA FY2024: $60.92B.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 1,
+        "citation_correct": 1,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "F03",
+      "status": "Complete",
+      "active_seconds": 0.109,
+      "saved_read_seconds": 0.00368,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "Did Amazon\u2019s FY2024 operating income grow more than 80% year over year?",
+          "reason": "AMZN FY2024 growth: 86.13%.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 2,
+        "citation_correct": 2,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "F04",
+      "status": "Complete",
+      "active_seconds": 0.125,
+      "saved_read_seconds": 0.00394,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "What was Alphabet\u2019s consolidated operating margin in FY2024?",
+          "reason": "GOOGL FY2024 margin: 32.11%.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 2,
+        "citation_correct": 2,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "F05",
+      "status": "Complete",
+      "active_seconds": 0.109,
+      "saved_read_seconds": 0.00363,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "How much did Meta\u2019s FY2024 net income grow year over year?",
+          "reason": "META FY2024 growth: 59.50%.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 2,
+        "citation_correct": 2,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "F06",
+      "status": "Complete",
+      "active_seconds": 0.11,
+      "saved_read_seconds": 0.00355,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Contradicted",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "Did Tesla\u2019s consolidated revenue fall in FY2024 compared with FY2023?",
+          "reason": "The calculated figures contradict the assertion. TSLA FY2024 growth: 0.95%.",
+          "verdict": "Contradicted"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 2,
+        "citation_correct": 2,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "F07",
+      "status": "Complete",
+      "active_seconds": 0.109,
+      "saved_read_seconds": 0.00363,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "Was Costco\u2019s diluted EPS $16.56 for its fiscal year ending September 1, 2024?",
+          "reason": "COST FY2024: $16.56/share.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 1,
+        "citation_correct": 1,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "E01",
+      "status": "Complete",
+      "active_seconds": 0.172,
+      "saved_read_seconds": 0.0038,
+      "counts": {
+        "lookups": 4,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [
+        "No eligible evidence for Find dated Microsoft disclosures about the event.",
+        "No eligible evidence for Find independent, dated coverage of Microsoft."
+      ],
+      "findings": [
+        {
+          "claim": "Microsoft released FY2024 results on 2024-07-30",
+          "reason": "Dated source evidence documents the event.",
+          "verdict": "Supported"
+        },
+        {
+          "claim": "The reported financial change",
+          "reason": "MSFT FY2024 growth: 15.67%.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 2,
+        "unsupported_numerical": 0,
+        "verdict_correct": 2,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "E02",
+      "status": "Complete",
+      "active_seconds": 0.156,
+      "saved_read_seconds": 0.00365,
+      "counts": {
+        "lookups": 4,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [
+        "No eligible evidence for Find dated NVIDIA disclosures about the event.",
+        "No eligible evidence for Find independent, dated coverage of NVIDIA."
+      ],
+      "findings": [
+        {
+          "claim": "NVIDIA released FY2024 results on 2024-02-21",
+          "reason": "Dated source evidence documents the event.",
+          "verdict": "Supported"
+        },
+        {
+          "claim": "The reported financial change",
+          "reason": "NVDA FY2024 growth: 125.85%.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 2,
+        "unsupported_numerical": 0,
+        "verdict_correct": 2,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "E03",
+      "status": "Complete",
+      "active_seconds": 0.156,
+      "saved_read_seconds": 0.00411,
+      "counts": {
+        "lookups": 4,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [
+        "No eligible evidence for Find dated Amazon disclosures about the event.",
+        "No eligible evidence for Find independent, dated coverage of Amazon."
+      ],
+      "findings": [
+        {
+          "claim": "Amazon released FY2024 results on 2025-02-06",
+          "reason": "Dated source evidence documents the event.",
+          "verdict": "Supported"
+        },
+        {
+          "claim": "The reported financial change",
+          "reason": "AMZN FY2024 change: $31.74B.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 2,
+        "unsupported_numerical": 0,
+        "verdict_correct": 2,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "E04",
+      "status": "Complete",
+      "active_seconds": 0.187,
+      "saved_read_seconds": 0.00356,
+      "counts": {
+        "lookups": 4,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [
+        "No eligible evidence for Find dated Meta disclosures about the event.",
+        "No eligible evidence for Find independent, dated coverage of Meta."
+      ],
+      "findings": [
+        {
+          "claim": "Meta released FY2024 results on 2025-01-29",
+          "reason": "Dated source evidence documents the event.",
+          "verdict": "Supported"
+        },
+        {
+          "claim": "The reported financial change",
+          "reason": "META FY2024 change: $23.26B.",
+          "verdict": "Supported"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 2,
+        "unsupported_numerical": 0,
+        "verdict_correct": 2,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "financial_total": 1,
+        "financial_correct": 1
+      }
+    },
+    {
+      "id": "E05",
+      "status": "Complete",
+      "active_seconds": 0.234,
+      "saved_read_seconds": 0.00367,
+      "counts": {
+        "lookups": 5,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Partially supported",
+      "error": null,
+      "model_usage": [],
+      "limitations": [
+        "No eligible evidence for Find dated Microsoft disclosures about the event.",
+        "No eligible evidence for Read the Microsoft earnings release.",
+        "No eligible evidence for Find independent, dated coverage of Microsoft."
+      ],
+      "findings": [
+        {
+          "claim": "Microsoft FY2024 revenue growth accelerated",
+          "reason": "MSFT FY2023 growth: 6.88% \u00b7 MSFT FY2024 growth: 15.67% \u00b7 MSFT FY2024 acceleration: 8.79 pp.",
+          "verdict": "Supported"
+        },
+        {
+          "claim": "Interest rates caused the acceleration",
+          "reason": "The cited observations provide context without establishing the claimed cause.",
+          "verdict": "Unresolved"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 2,
+        "unsupported_numerical": 0,
+        "verdict_correct": 2,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "financial_total": 3,
+        "financial_correct": 3
+      }
+    },
+    {
+      "id": "C01",
+      "status": "Complete",
+      "active_seconds": 0.203,
+      "saved_read_seconds": 0.00357,
+      "counts": {
+        "lookups": 2,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 1,
+        "retries": 0
+      },
+      "verdict": "Contradicted",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "The stated figures contradict each other",
+          "reason": "16% as reported and 15% in constant currency use different measurement bases.",
+          "verdict": "Contradicted"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "conflict_total": 1,
+        "conflict_correct": 1
+      }
+    },
+    {
+      "id": "C02",
+      "status": "Complete",
+      "active_seconds": 0.172,
+      "saved_read_seconds": 0.00376,
+      "counts": {
+        "lookups": 2,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 1,
+        "retries": 0
+      },
+      "verdict": "Contradicted",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "The stated figures contradict each other",
+          "reason": "24% as reported and 22% on an adjusted basis use different measurement bases.",
+          "verdict": "Contradicted"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "conflict_total": 1,
+        "conflict_correct": 1
+      }
+    },
+    {
+      "id": "C03",
+      "status": "Complete",
+      "active_seconds": 0.172,
+      "saved_read_seconds": 0.00343,
+      "counts": {
+        "lookups": 2,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 1,
+        "retries": 0
+      },
+      "verdict": "Contradicted",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "The stated figures contradict each other",
+          "reason": "22% as reported and 20% on an adjusted basis use different measurement bases.",
+          "verdict": "Contradicted"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 3,
+        "citation_correct": 3,
+        "conflict_total": 1,
+        "conflict_correct": 1
+      }
+    },
+    {
+      "id": "C04",
+      "status": "Complete",
+      "active_seconds": 0.109,
+      "saved_read_seconds": 0.00345,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Contradicted",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "The stated figures contradict each other",
+          "reason": "391035 million and 391.035 billion are display forms of the same verified measurement.",
+          "verdict": "Contradicted"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 1,
+        "citation_correct": 1,
+        "conflict_total": 1,
+        "conflict_correct": 1
+      }
+    },
+    {
+      "id": "C05",
+      "status": "Complete",
+      "active_seconds": 0.125,
+      "saved_read_seconds": 0.00337,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Contradicted",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "The stated figures contradict each other",
+          "reason": "90.753 billion covers FY2024 Q2. 391.035 billion covers FY2024.",
+          "verdict": "Contradicted"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "citation_total": 2,
+        "citation_correct": 2,
+        "conflict_total": 1,
+        "conflict_correct": 1
+      }
+    },
+    {
+      "id": "U01",
+      "status": "Waiting for clarification",
+      "active_seconds": 0.047,
+      "saved_read_seconds": 0.00316,
+      "counts": {
+        "lookups": 0,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [],
+      "score": {
+        "uncertainty_total": 1,
+        "uncertainty_correct": 1
+      }
+    },
+    {
+      "id": "U02",
+      "status": "Complete",
+      "active_seconds": 0.156,
+      "saved_read_seconds": 0.00342,
+      "counts": {
+        "lookups": 2,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 1,
+        "retries": 0
+      },
+      "verdict": "Unresolved",
+      "error": null,
+      "model_usage": [],
+      "limitations": [
+        "No eligible evidence for Retrieve comparable Apple consolidated figures.",
+        "No eligible evidence for Read Apple fiscal filing for revenue."
+      ],
+      "findings": [
+        {
+          "claim": "As of September 30, 2024, what was Apple\u2019s filed FY2024 annual revenue?",
+          "reason": "Missing comparable revenue for AAPL FY2024.",
+          "verdict": "Unresolved"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "uncertainty_total": 1,
+        "uncertainty_correct": 1
+      }
+    },
+    {
+      "id": "U03",
+      "status": "Complete",
+      "active_seconds": 0.109,
+      "saved_read_seconds": 0.00347,
+      "counts": {
+        "lookups": 1,
+        "models": 0,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": "Unresolved",
+      "error": null,
+      "model_usage": [],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "What was Amazon\u2019s FY2023 year-over-year net income growth rate from its FY2022 loss?",
+          "reason": "Growth requires a positive baseline in each comparison.",
+          "verdict": "Unresolved"
+        }
+      ],
+      "lookup_issues": [],
+      "score": {
+        "verdict_total": 1,
+        "unsupported_numerical": 0,
+        "verdict_correct": 1,
+        "uncertainty_total": 1,
+        "uncertainty_correct": 1
+      }
+    }
+  ]
+}

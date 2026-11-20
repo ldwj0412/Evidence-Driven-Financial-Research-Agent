@@ -1,0 +1,13 @@
+[openrouter]
+api_key = ""
+base_url = "https://openrouter.ai/api/v1"
+model = "openai/gpt-5-mini"
+
+[fred]
+api_key = ""
+
+[tavily]
+api_key = ""
+
+[sec]
+user_agent = ""

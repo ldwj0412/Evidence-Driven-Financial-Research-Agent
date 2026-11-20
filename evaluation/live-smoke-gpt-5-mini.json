@@ -1,0 +1,225 @@
+{
+  "mode": "live-smoke",
+  "live_timing": {
+    "count": 6,
+    "median_seconds": 22.219
+  },
+  "runs": [
+    {
+      "id": "revenue",
+      "status": "Failed",
+      "active_seconds": 22.266,
+      "saved_read_seconds": 0.00302,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "conflict",
+      "status": "Failed",
+      "active_seconds": 22.219,
+      "saved_read_seconds": 0.00322,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "rates",
+      "status": "Failed",
+      "active_seconds": 22.204,
+      "saved_read_seconds": 0.00351,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "status": "Failed",
+      "active_seconds": 22.219,
+      "saved_read_seconds": 0.003,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "profit",
+      "status": "Failed",
+      "active_seconds": 22.219,
+      "saved_read_seconds": 0.00302,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "quarterly_eps",
+      "status": "Failed",
+      "active_seconds": 22.219,
+      "saved_read_seconds": 0.00305,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    }
+  ]
+}

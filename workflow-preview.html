@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Financial Research Agent · Workflow Preview</title>
+  <style>
+    :root {
+      --paper: #f5f4ee;
+      --surface: #fffefb;
+      --ink: #162b24;
+      --muted: #526359;
+      --line: #dce1d6;
+      --forest: #102d25;
+      --green: #245342;
+      --green-wash: #e9f2e8;
+      --mint: #d9eed0;
+      --amber: #78501a;
+      --amber-wash: #faf0db;
+      --red: #8a392d;
+      --red-wash: #f9ece7;
+      --sans: "Aptos", "Segoe UI", sans-serif;
+      --serif: "Georgia", "Cambria", serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 var(--sans); }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -.035em; line-height: 1.13; }
+    h3 { font-size: 1rem; }
+    button, input, textarea, select { font: inherit; }
+    button, summary { cursor: pointer; }
+    button:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible {
+      outline: 2px solid #4b8667; outline-offset: 3px;
+    }
+    [hidden] { display: none !important; }
+    a { color: var(--green); text-underline-offset: 3px; }
+
+    .session-sidebar {
+      position: sticky; top: 16px; max-height: calc(100dvh - 32px); display: flex; flex-direction: column; min-width: 0;
+    }
+    .sidebar-bar { display: flex; align-items: center; min-height: 24px; margin-bottom: 8px; }
+    .sidebar-menu {
+      flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 13px; overflow: auto;
+      border: 1px solid var(--line); border-radius: 10px; background: #edf0e8;
+    }
+    .sidebar-menu .new-session { display: flex; gap: 8px; align-items: center; width: 100%; min-height: 39px; border-color: #bed3bf; background: var(--green-wash); }
+    .sidebar-menu .new-session:hover { background: #dcebd9; }
+    .new-session span { font-size: 1.15em; line-height: 1; }
+    .sidebar-title { margin: 0 4px 5px; }
+    .mobile-sessions { display: none; }
+    .session-list, .session-turns { display: grid; gap: 3px; }
+    .session-list button, .session-turns button {
+      width: 100%; padding: 7px 9px; border: 1px solid transparent; border-radius: 7px;
+      text-align: left; background: transparent; color: var(--ink); overflow-wrap: anywhere;
+    }
+    .session-list button { font-size: .87rem; font-weight: 650; }
+    .session-list button:hover, .session-turns button:hover { background: #e6eee2; }
+    .session-list button[aria-current="true"], .session-turns button[aria-current="true"] {
+      border-color: #c5d7c2; background: #deeade; color: #183d2e;
+    }
+    .session-turns button { font-size: .83rem; }
+    .session-turns button span { display: block; color: var(--muted); font-size: .73rem; }
+    .session-list button:disabled, .session-turns button:disabled { cursor: default; opacity: .65; }
+    .session-empty { color: var(--muted); font-size: .82rem; margin: 5px 4px 0; }
+    .storage-note { margin: auto 4px 0; color: var(--muted); font-size: .75rem; }
+    .shell { width: min(1280px, calc(100% - 64px)); margin: 0 auto; }
+    .masthead {
+      color: #f7f8f2;
+      background:
+        radial-gradient(ellipse at 100% 78%, #214737 0, transparent 54%),
+        var(--forest);
+    }
+    .brandbar { display: flex; align-items: center; justify-content: space-between; min-height: 67px; gap: 12px; border-bottom: 1px solid #ffffff27; }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: .91rem; font-weight: 650; letter-spacing: .015em; }
+    .mark { width: 30px; height: 30px; padding: 7px; display: grid; grid-template-rows: repeat(3, 2px); align-content: space-between; border: 1px solid #a4c0a7; border-radius: 7px; transform: rotate(-5deg); }
+    .mark i { height: 2px; background: #c6e4bc; border-radius: 1px; }
+    .mark i:nth-child(2) { width: 72%; }
+    .mark i:nth-child(3) { width: 87%; }
+    .demo-label { display: inline-flex; flex: none; align-items: center; gap: 7px; color: #d4e5d4; font-size: .78rem; }
+    .demo-label::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #b7d99f; }
+    .hero { padding: 35px 0 31px; }
+    .hero h1 { font-size: clamp(2.35rem, 5vw, 4rem); }
+    .hero .intro { margin: 8px 0 22px; color: #c0d4c7; }
+    .prompt-form { display: flex; align-items: start; gap: 10px; }
+    .question {
+      min-width: 0; flex: 1; min-height: 49px; max-height: 8rem; padding: 11px 15px;
+      field-sizing: content; resize: vertical; border: 1px solid #6b8878;
+      border-radius: 8px; background: #ffffff0c; color: #f8fcf7;
+    }
+    .question::placeholder { color: #c0d4c7; }
+    .masthead :focus-visible { outline-color: #deefd3; }
+    .primary {
+      display: inline-flex; justify-content: center; align-items: center; gap: 12px; border: 0; border-radius: 8px;
+      padding: 0 16px; min-height: 44px; background: var(--green); color: #fff; font-weight: 650;
+      white-space: nowrap;
+    }
+    .masthead .primary { min-height: 49px; background: var(--mint); color: var(--forest); }
+    .masthead .primary:hover { background: #ebf8e5; }
+    .primary:hover { background: #326d57; }
+    .primary:disabled { cursor: default; opacity: .64; }
+    .primary span { font-size: 1.15em; line-height: 1; }
+    .examples { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 13px; font-size: .8rem; }
+    .examples > span { color: #c5d8ca; margin-right: 4px; }
+    .example {
+      border: 1px solid #8eaf9e5e; padding: 4px 11px; border-radius: 99px; color: #e1ece1;
+      background: transparent; min-height: 29px;
+    }
+    .example:hover, .example[aria-pressed="true"] { background: #def3d71a; border-color: #a2c0a6; }
+    .follow-up { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 9px; color: #c5d8ca; font-size: .8rem; }
+    .follow-up .example { border-color: #a2c0a6; }
+    .prompt-error { color: #ffdfad; margin-top: 8px; font-size: .86rem; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+    .workspace {
+      display: grid; grid-template-columns: clamp(210px, 18vw, 245px) minmax(0, 1fr);
+      align-items: start; gap: clamp(16px, 2vw, 27px); padding-top: 25px; padding-bottom: 46px;
+    }
+    .workflow { margin-bottom: 22px; }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+    .section-heading h2, .sidebar-bar h2 { font: 650 .79rem/1.2 var(--sans); letter-spacing: .065em; text-transform: uppercase; }
+    .status {
+      display: inline-flex; align-items: center; gap: 6px; width: fit-content; white-space: nowrap;
+      padding: 3px 9px; border-radius: 99px; color: var(--green); background: var(--green-wash); font-size: .75rem; font-weight: 650;
+    }
+    .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .status.warning { background: var(--amber-wash); color: var(--amber); }
+    .status.negative { background: var(--red-wash); color: var(--red); }
+    .status.neutral { color: var(--muted); background: #eeefe9; }
+    .steps {
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px;
+      border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--line);
+    }
+    .step {
+      min-height: 55px; border: 0; margin: 0; padding: 7px 10px; background: var(--surface); color: var(--ink);
+      display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 650; position: relative;
+    }
+    .step:focus-visible { outline-offset: -4px; z-index: 1; }
+    .step:hover { background: #f0f4ec; }
+    .step[aria-pressed="true"] { background: var(--green-wash); box-shadow: inset 0 -3px var(--green); }
+    .step.pending:not([aria-pressed="true"]) { color: var(--muted); }
+    .step-number {
+      display: grid; width: 24px; height: 24px; place-items: center; flex: none; font-size: .73rem;
+      color: var(--muted); border-radius: 50%; background: #eef0e9; font-variant-numeric: tabular-nums;
+    }
+    .step.done .step-number { background: var(--green-wash); color: var(--green); }
+    .step[aria-pressed="true"] .step-number, .step.current .step-number { background: var(--green); color: #fff; }
+    .step.current:not([aria-pressed="true"]) .step-number { outline: 2px solid #70947c; outline-offset: 2px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(235px, 1fr); gap: 19px; align-items: start; }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+    .panel-main { padding: 24px 27px; }
+    .panel-side { padding: 17px 19px; }
+    .panel-topline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+    .eyebrow { color: var(--muted); font-size: .72rem; font-weight: 650; text-transform: uppercase; letter-spacing: .085em; }
+    .panel-main h2 { font-size: clamp(1.75rem, 3.2vw, 2.6rem); }
+    .lede { margin-top: 8px; color: var(--muted); max-width: 68ch; }
+    .result-list { display: grid; gap: 8px; margin-top: 18px; }
+    .result-claim { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 14px; padding: 11px 12px; background: #f5f6ef; border-radius: 7px; }
+    .result-claim strong { align-self: center; }
+    .result-claim p { grid-column: 1 / -1; color: var(--muted); font-size: .88rem; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 118px), 1fr)); gap: 9px; margin-top: 18px; }
+    .metric { padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px; background: #f8f9f4; min-width: 0; }
+    .metric:last-child { background: var(--green-wash); border-color: #d5e5d3; }
+    .metric span { color: var(--muted); font-size: .8rem; display: block; }
+    .metric strong { font: 400 clamp(1.45rem, 3.3vw, 2.09rem)/1.24 var(--serif); color: var(--green); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .block { margin-top: 21px; }
+    .block h3 { margin-bottom: 6px; }
+    .block > p { color: var(--muted); }
+    .report-support { margin-top: 24px; padding-top: 4px; border-top: 1px solid var(--line); }
+    .report-support > summary {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      padding: 9px 4px; border-radius: 5px; list-style: none; color: var(--muted); font-weight: 650; font-size: .88rem;
+    }
+    .report-support > summary::-webkit-details-marker { display: none; }
+    .report-support > summary::after {
+      content: ""; width: 7px; height: 7px; margin: 0 4px; border-right: 1.5px solid currentColor;
+      border-bottom: 1.5px solid currentColor; transform: rotate(45deg);
+    }
+    .report-support[open] > summary::after { transform: rotate(225deg); }
+    .report-support > summary:hover { background: #f5f7f1; color: var(--green); }
+    .report-support-body { margin: 4px 0 0 4px; padding-left: 12px; border-left: 2px solid var(--line); }
+    .report-support-body > .block:first-child { margin-top: 0; }
+    .sources { display: grid; gap: 7px; }
+    .disclosure { border: 1px solid var(--line); border-radius: 7px; }
+    .disclosure summary { padding: 9px 11px; font-weight: 650; list-style: none; display: flex; align-items: baseline; gap: 8px; }
+    .disclosure summary::-webkit-details-marker { display: none; }
+    .disclosure summary::before {
+      content: ""; width: 6px; height: 6px; flex: 0 0 6px; transform: translateY(-1px) rotate(-45deg);
+      border-right: 1.5px solid var(--green); border-bottom: 1.5px solid var(--green);
+    }
+    .disclosure[open] > summary::before { transform: translateY(-3px) rotate(45deg); }
+    .disclosure summary:hover { background: #f5f7f1; border-radius: 7px; }
+    .disclosure-body { padding: 0 12px 11px; color: var(--muted); font-size: .9rem; }
+    .disclosure-body p + p, .disclosure-body p + a, .disclosure-body table + p { margin-top: 5px; }
+    .disclosure-body a { display: inline-block; font-weight: 650; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; }
+    .data-table th, .data-table td { padding: 5px 5px 5px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .data-table th:last-child, .data-table td:last-child { text-align: right; padding-right: 0; }
+    .data-table thead th { color: var(--muted); font-size: .76rem; }
+    .timeline { list-style: none; padding: 0 0 0 11px; margin: 9px 0 0 3px; border-left: 1px solid #9eb3a5; }
+    .timeline li { position: relative; padding: 0 0 12px 6px; }
+    .timeline li:last-child { padding-bottom: 0; }
+    .timeline li::before { content: ""; position: absolute; top: 7px; left: -15px; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    .timeline time { display: block; font-size: .78rem; color: var(--muted); }
+    .timeline p { font-size: .89rem; }
+
+    .side-question { margin: 5px 0 14px; font: 400 1.11rem/1.35 var(--serif); }
+    .side-facts { margin: 0 0 13px; }
+    .side-facts div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .83rem; }
+    .side-facts dt, .side-note { color: var(--muted); }
+    .side-facts dd { margin: 0; text-align: right; font-weight: 650; }
+    .side-note { margin-top: 11px; font-size: .79rem; }
+    .secondary:disabled { cursor: default; opacity: .65; }
+    .history { list-style: none; padding: 0; margin: 0; }
+    .history li + li { border-top: 1px solid var(--line); }
+    .history button { padding: 7px 0; display: block; text-align: left; width: 100%; border: 0; background: transparent; color: var(--green); font-size: .82rem; font-weight: 650; }
+    .history button:hover { text-decoration: underline; }
+    .history button[aria-current="true"] { text-decoration: underline; text-underline-offset: 3px; }
+    .history small { display: block; margin: -3px 0 5px; font-size: .76rem; }
+    .plan-toggle { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+    .secondary { padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--green); min-height: 34px; font-weight: 650; font-size: .84rem; }
+    .secondary:hover, .secondary[aria-pressed="true"] { background: var(--green-wash); border-color: #bed3bf; }
+    .plan-list { list-style: none; padding: 0; margin: 13px 0 0; }
+    .plan-list li { padding: 10px 0; border-top: 1px solid var(--line); }
+    .plan-list p { color: var(--muted); font-size: .88rem; }
+    .plan-list .request { font-weight: 650; color: var(--ink); }
+    .plan-claim { margin-top: 2px; }
+    .reuse-mark { color: var(--green); font-size: .78rem; font-weight: 650; }
+    .source-reuse { margin: 0 0 4px 1px; }
+    .structured { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 14px 0 0; }
+    .structured dt { color: var(--muted); }
+    .structured dd { margin: 0; }
+    .clarify { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 480px; margin-top: 16px; }
+    .clarify label { display: grid; gap: 4px; font-weight: 650; }
+    .clarify select { min-height: 42px; width: 100%; background: var(--surface); color: var(--ink); border: 1px solid #a7b5a7; border-radius: 7px; padding: 0 9px; }
+    .clarify button { grid-column: 1 / -1; justify-self: start; }
+    @media (max-width: 1050px) {
+      .shell { width: min(100% - 36px, 700px); }
+      .layout { grid-template-columns: 1fr; gap: 12px; }
+      .panel-main { padding: 19px; }
+    }
+    @media (max-width: 850px) {
+      .workspace { display: block; }
+      .session-sidebar { position: static; max-height: none; margin-bottom: 13px; }
+      .sidebar-bar h2 { display: none; }
+      .mobile-sessions { display: inline-flex; align-items: center; gap: 8px; }
+      .mobile-sessions::before {
+        content: ""; width: 13px; height: 10px; border-block: 1px solid currentColor;
+        background: linear-gradient(currentColor, currentColor) center / 100% 1px no-repeat;
+      }
+      .sidebar-menu { max-height: min(65dvh, 440px); }
+      .session-sidebar[data-expanded="false"] .sidebar-bar { margin-bottom: 0; }
+      .session-sidebar[data-expanded="false"] .sidebar-menu { display: none; }
+    }
+    @media (max-width: 480px) {
+      .shell { width: calc(100% - 28px); }
+      .brandbar { min-height: 56px; }
+      .brand { font-size: .78rem; gap: 7px; }
+      .mark { width: 24px; height: 24px; padding: 5px; }
+      .demo-label { font-size: .72rem; }
+      .hero { padding: 25px 0 20px; }
+      .hero .intro { margin: 7px 0 14px; }
+      .prompt-form { display: grid; gap: 6px; }
+      .question { width: 100%; min-height: 69px; }
+      .prompt-form .primary { justify-self: start; }
+      .workspace { padding-top: 17px; }
+      .step { flex-direction: column; gap: 3px; font-size: .74rem; padding: 4px 2px; }
+      .step-number { width: 20px; height: 20px; }
+      .panel-main, .panel-side { padding: 14px; }
+      .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+      .metric { padding: 7px 5px; }
+      .metric strong { font-size: clamp(1.03rem, 4.3vw, 1.45rem); }
+      .metric span { font-size: .72rem; }
+      .result-claim { grid-template-columns: 1fr; gap: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell">
+      <div class="brandbar">
+        <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>Financial Research Agent</div>
+        <span class="demo-label">Demo data</span>
+      </div>
+      <div class="hero">
+        <h1>Investigate a financial claim</h1>
+        <p class="intro">Try an example and trace how the agent reaches its verdict.</p>
+        <form class="prompt-form" id="prompt-form">
+          <label class="visually-hidden" for="question">Research question</label>
+          <textarea class="question" id="question" rows="1" required maxlength="300" autocomplete="off" placeholder="Enter a demo question" aria-describedby="prompt-error"></textarea>
+          <button class="primary" id="run" type="submit">Run investigation <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="prompt-error" id="prompt-error" role="alert" hidden></p>
+        <div class="examples" id="examples" aria-label="Example questions"><span>Try an example</span></div>
+        <div class="follow-up" id="follow-up" hidden>
+          <span>Continue this report</span><button class="example" id="follow-up-prompt" type="button">What about operating income?</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell workspace">
+    <aside class="session-sidebar" id="session-sidebar" aria-label="Session history" data-expanded="false">
+      <div class="sidebar-bar">
+        <h2>Research sessions</h2>
+        <button type="button" class="secondary mobile-sessions" id="session-menu-toggle" aria-controls="session-menu" aria-expanded="false">Sessions</button>
+      </div>
+      <div class="sidebar-menu" id="session-menu">
+        <button type="button" class="secondary new-session" id="new-session"><span aria-hidden="true">+</span> New session</button>
+        <nav class="session-list" id="session-list" aria-label="Research sessions"></nav>
+        <section aria-labelledby="session-heading">
+          <h3 class="eyebrow sidebar-title" id="session-heading">Session questions</h3>
+          <p id="no-turns" class="session-empty">Completed investigations appear here.</p>
+          <nav class="session-turns" id="session-turns" aria-label="Session questions"></nav>
+        </section>
+        <p class="storage-note" id="storage-note"></p>
+      </div>
+    </aside>
+    <div>
+        <section class="workflow" aria-labelledby="workflow-heading">
+          <div class="section-heading">
+            <h2 id="workflow-heading">Investigation workflow</h2>
+            <span class="status neutral" id="run-status" role="status"></span>
+          </div>
+          <nav class="steps" id="steps" aria-label="Investigation steps"></nav>
+        </section>
+        <div class="layout">
+          <section class="panel panel-main" id="stage-panel" aria-labelledby="stage-title" tabindex="-1"></section>
+          <aside class="panel panel-side" id="run-details" aria-labelledby="run-heading">
+            <h3 id="run-heading">Run details</h3>
+            <p id="run-question" class="side-question"></p>
+            <dl class="side-facts" id="run-facts"></dl>
+            <details class="disclosure" id="history-details">
+              <summary>Investigation history</summary>
+              <div class="disclosure-body"><ol class="history" id="history"></ol></div>
+            </details>
+            <p class="side-note">Retrieval counts are simulated. Source links open the original pages.</p>
+          </aside>
+        </div>
+    </div>
+  </main>
+
+  <script>
+    "use strict";
+
+    const sources = {
+      filing: {
+        title: "Microsoft FY2024 Form 10-K", kind: "SEC EDGAR · Primary filing",
+        date: "July 30, 2024", id: "0000950170-24-087843",
+        url: "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm",
+        detail: "Consolidated income statements with three fiscal years of comparable figures. Each fiscal year ended June 30."
+      },
+      release: {
+        title: "Microsoft FY2024 earnings release", kind: "SEC EDGAR · Earnings release (8-K exhibit)",
+        date: "July 30, 2024", id: "0000950170-24-087835",
+        url: "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/msft-ex99_1.htm",
+        detail: "The full-year highlights show 16% reported revenue growth and 15% growth in constant currency."
+      },
+      fred: {
+        title: "Federal Funds Effective Rate", kind: "FRED · Monthly macroeconomic series",
+        date: "June 2024 observation", id: "FEDFUNDS",
+        url: "https://fred.stlouisfed.org/data/FEDFUNDS",
+        detail: "The monthly average effective federal funds rate was 5.33% in June 2024."
+      },
+      news: {
+        title: "Axios coverage of Microsoft’s earnings", kind: "News · Independent reporting",
+        date: "July 30, 2024", id: "",
+        url: "https://www.axios.com/2024/07/30/microsoft-stock-earnings-ai-azure-cloud",
+        detail: "The article covers Microsoft’s earnings and Azure growth. It offers event context without establishing a rate effect on full-year revenue."
+      }
+    };
+
+    const labels = {
+      parse: "Parse", plan: "Plan", retrieve: "Retrieve", verify: "Verify", report: "Report"
+    };
+    const revenue = {2022: 198270, 2023: 211915, 2024: 245122};
+    const profit = {
+      operating: {label: "Operating income", values: {2022: 83383, 2023: 88523, 2024: 109433}},
+      net: {label: "Net income", values: {2022: 72738, 2023: 72361, 2024: 88136}}
+    };
+    const growthRate = (current, prior) => (current / prior - 1) * 100;
+    const pct = (value) => value.toFixed(2) + "%";
+    const number = new Intl.NumberFormat("en-US");
+    const growth23 = growthRate(revenue[2023], revenue[2022]);
+    const growth24 = growthRate(revenue[2024], revenue[2023]);
+    const acceleration = (growth24 - growth23).toFixed(2) + " pp";
+    const sourceRequest = (source, request, claim, reason) => ({source, request, claim, reason});
+    const revenueClaim = "Revenue growth accelerated";
+    const rateClaim = "Interest rates explain the acceleration";
+    const conflictClaim = "The two figures disagree";
+    const revenueRequest = sourceRequest("SEC EDGAR", "FY2022–FY2024 consolidated revenue", revenueClaim, "Two year-over-year rates need three consecutive annual figures.");
+    const revenueMetrics = [
+      ["FY2023 growth", pct(growth23)],
+      ["FY2024 growth", pct(growth24)],
+      ["Acceleration", acceleration]
+    ];
+    const revenueCalc = [
+      ["(211,915 ÷ 198,270 − 1) × 100", pct(growth23)],
+      ["(245,122 ÷ 211,915 − 1) × 100", pct(growth24)],
+      ["FY2024 growth − FY2023 growth", acceleration]
+    ];
+    const revenueRows = Object.entries(revenue).map(([year, value]) => ["FY" + year, number.format(value)]);
+
+    const cases = {
+      growth: {
+        label: "Revenue growth", question: "Did Microsoft’s revenue growth accelerate in FY2024?",
+        canFollow: true,
+        intent: "Verify a year-over-year growth comparison", period: "Fiscal years ending June 30, 2022–2024",
+        claims: [revenueClaim], plan: [revenueRequest], firstSources: ["filing"],
+        check: "All three operands use consolidated annual revenue in USD millions. Both growth rates use the previous fiscal year as the baseline.",
+        report: {
+          status: "Supported", title: revenueClaim,
+          summary: "Microsoft’s consolidated revenue grew faster in FY2024 than in FY2023. The comparison uses fiscal years ending June 30.",
+          metrics: revenueMetrics, operands: revenueRows, operandLabel: "Revenue (USD millions)", calc: revenueCalc,
+          limits: "This calculation describes the change in reported revenue growth. It does not establish what drove the change."
+        }
+      },
+      conflict: {
+        label: "Source conflict", question: "Why do two sources say Microsoft’s FY2024 revenue grew 16% and 15%?",
+        shortQuestion: "Why do two sources say 16% and 15%?",
+        intent: "Check whether two figures are comparable", period: "Fiscal year ended June 30, 2024",
+        claims: [conflictClaim],
+        plan: [sourceRequest("SEC EDGAR", "Reported FY2024 revenue growth", conflictClaim, "Establish the definition and value used in the annual filing.")],
+        firstSources: ["filing"],
+        gap: "The 10-K confirms the reported growth rate. The measurement basis for 15% is missing.",
+        followPlan: [sourceRequest("SEC EDGAR", "FY2024 earnings release", conflictClaim, "Find the publisher’s definition for the 15% figure and compare it with the reported rate.")],
+        followSources: ["release"],
+        check: "Both figures describe the same fiscal year. The earnings release confirms that 15% is calculated in constant currency and 16% is as reported.",
+        report: {
+          status: "Contradicted", title: "Reported vs. constant-currency growth",
+          summary: "Both figures are valid for FY2024. The earnings release shows that they measure revenue growth on different bases.",
+          metrics: [["As reported", "16%"], ["Constant currency", "15%"]],
+          verdicts: [[conflictClaim, "Contradicted", "The follow-up established which measurement basis each figure uses."]],
+          calc: [["(245,122 ÷ 211,915 − 1) × 100", pct(growth24)], ["Rounded reported growth", "16%"]],
+          limits: "The 15% figure comes from Microsoft’s disclosure. Reproducing the constant-currency calculation would require its exchange-rate adjustments."
+        }
+      },
+      rates: {
+        label: "Rates and earnings", question: "Did interest rates explain Microsoft’s FY2024 revenue growth acceleration?",
+        shortQuestion: "Did interest rates explain the acceleration?",
+        canFollow: true,
+        intent: "Verify the numerical claim and investigate a causal explanation", period: "FY2022–FY2024 and the July 2024 earnings release",
+        claims: [revenueClaim, rateClaim],
+        plan: [
+          revenueRequest,
+          sourceRequest("FRED", "Effective federal funds rate around FY2024", rateClaim, "Align the monthly macro observations with Microsoft’s fiscal year."),
+          sourceRequest("News search", "July 2024 Microsoft earnings coverage", rateClaim, "Look for independent reporting on explanations for the reported growth.")
+        ],
+        firstSources: ["filing", "fred", "news"],
+        check: "The filing supports acceleration. The rate observation and news coverage provide context, but neither establishes that interest rates drove the acceleration.",
+        report: {
+          status: "Partially supported", title: "Growth accelerated. The rate effect is unresolved.",
+          summary: "The filing supports the numerical claim. The saved macro data and earnings coverage provide context for the period.",
+          metrics: revenueMetrics, operands: revenueRows, operandLabel: "Revenue (USD millions)", calc: revenueCalc,
+          verdicts: [
+            [revenueClaim, "Supported", "The FY2024 growth rate exceeded the FY2023 rate by 8.79 percentage points."],
+            [rateClaim, "Unresolved", "The cited evidence does not establish a causal link to full-year growth."]
+          ],
+          timeline: [
+            ["2024-06", "June 2024 · FRED", "The effective federal funds rate averaged 5.33% in the final month of Microsoft’s fiscal year."],
+            ["2024-07-30", "July 30, 2024 · SEC EDGAR", "The annual filing shows $245.1 billion in FY2024 consolidated revenue."],
+            ["2024-07-30", "July 30, 2024 · Axios", "Earnings coverage discussed Azure growth and analyst expectations."]
+          ],
+          limits: "A monthly rate observation and coverage of the earnings event are insufficient to isolate the effect of interest rates on Microsoft’s full-year revenue."
+        }
+      },
+      profit: {
+        label: "Ambiguous profit", question: "Did Microsoft’s profit grow last year?"
+      }
+    };
+
+    function clarifiedCase(metric, year) {
+      const {label, values} = profit[metric];
+      const delta = growthRate(values[year], values[year - 1]);
+      const claim = label + " increased";
+      return {
+        ...cases.profit,
+        intent: "Verify growth in " + label.toLowerCase(),
+        period: "FY" + year + " compared with FY" + (year - 1),
+        claims: [claim],
+        plan: [sourceRequest("SEC EDGAR", "FY" + (year - 1) + " and FY" + year + " " + label.toLowerCase(), claim, "Use the clarified profit definition for both fiscal years.")],
+        firstSources: ["filing"],
+        check: "The comparison uses " + label.toLowerCase() + " for both fiscal years, as selected in clarification.",
+        report: {
+          status: delta > 0 ? "Supported" : "Contradicted",
+          title: label + (delta > 0 ? " increased" : " declined"),
+          summary: "The verdict uses the " + label.toLowerCase() + " definition and FY" + year + " selected in clarification.",
+          metrics: [["FY" + (year - 1) + " (USD M)", number.format(values[year - 1])], ["FY" + year + " (USD M)", number.format(values[year])], ["Year-over-year change", pct(delta)]],
+          calc: [["(" + number.format(values[year]) + " ÷ " + number.format(values[year - 1]) + " − 1) × 100", pct(delta)]],
+          limits: "A different profit measure or fiscal year can change the verdict."
+        }
+      };
+    }
+
+    const followUpQuestion = "What about operating income?";
+
+    function operatingIncomeFollowUp(parentQuestion) {
+      const {values} = profit.operating;
+      const priorGrowth = growthRate(values[2023], values[2022]);
+      const currentGrowth = growthRate(values[2024], values[2023]);
+      const change = (currentGrowth - priorGrowth).toFixed(2) + " pp";
+      const claim = "Operating income growth accelerated";
+      return {
+        label: "Operating income", question: followUpQuestion, canFollow: true,
+        contextNote: "Carried forward Microsoft, FY2024, and the growth-acceleration comparison. The metric is now operating income.",
+        parentQuestion,
+        intent: "Verify acceleration in operating income growth", period: cases.growth.period,
+        claims: [claim],
+        plan: [sourceRequest("SEC EDGAR", "FY2022–FY2024 consolidated operating income", claim,
+          "The FY2024 10-K already in this session contains all three annual operating income figures.")],
+        firstSources: ["filing"],
+        check: "The three operands use the same operating income definition and fiscal year basis. Both growth rates were calculated from the reused filing.",
+        report: {
+          status: "Supported", title: claim,
+          summary: "Microsoft’s consolidated operating income grew faster in FY2024 than in FY2023. This calculation reuses the filing from the earlier investigation.",
+          metrics: [["FY2023 growth", pct(priorGrowth)], ["FY2024 growth", pct(currentGrowth)], ["Acceleration", change]],
+          operands: Object.entries(values).map(([year, value]) => ["FY" + year, number.format(value)]), operandLabel: "Operating income (USD millions)",
+          calc: [["(88,523 ÷ 83,383 − 1) × 100", pct(priorGrowth)], ["(109,433 ÷ 88,523 − 1) × 100", pct(currentGrowth)],
+            ["FY2024 growth − FY2023 growth", change]],
+          limits: "This result describes the change in operating income growth. The reused filing provides the operands for this comparison."
+        }
+      };
+    }
+
+    const question = document.getElementById("question");
+    const examples = document.getElementById("examples");
+    const steps = document.getElementById("steps");
+    const panel = document.getElementById("stage-panel");
+    const history = document.getElementById("history");
+    const status = document.getElementById("run-status");
+    const runButton = document.getElementById("run");
+    const promptError = document.getElementById("prompt-error");
+    const historyDetails = document.getElementById("history-details");
+    const sessionSidebar = document.getElementById("session-sidebar");
+    const sessionList = document.getElementById("session-list");
+    const sessionMenuToggle = document.getElementById("session-menu-toggle");
+    const newSession = document.getElementById("new-session");
+    const sessionTurns = document.getElementById("session-turns");
+    const followUp = document.getElementById("follow-up");
+    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    const compactSessions = matchMedia("(max-width: 850px)");
+    const stageButtons = {};
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[char]);
+    const normalize = (value) => value.toLowerCase()
+      .replace(/\b(?:microsoft|msft)(?:[’']s)?\b/g, "microsoft")
+      .replace(/\bfy\s*(20\d{2})\b/g, "$1")
+      .replace(/[?!.]+\s*$/, "").replace(/\s+/g, " ").trim();
+
+    for (const [id, example] of Object.entries(cases)) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "example";
+      button.dataset.example = id;
+      button.textContent = example.label;
+      examples.append(button);
+    }
+
+    for (const [index, [id, label]] of Object.entries(labels).entries()) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "step";
+      button.setAttribute("aria-label", label);
+      button.setAttribute("aria-controls", "stage-panel");
+      button.innerHTML = '<span class="step-number" aria-hidden="true">' + (index + 1) + "</span>" + label;
+      button.addEventListener("click", () => showStep(id));
+      steps.append(button);
+      stageButtons[id] = button;
+    }
+
+    function lookup(value) {
+      const normalized = normalize(value);
+      return Object.keys(cases).find(id => {
+        const example = cases[id];
+        return normalize(example.question) === normalized ||
+          (example.shortQuestion && normalize(example.shortQuestion) === normalized);
+      });
+    }
+
+    function retrievalNote(ids, reusedSources) {
+      const reused = ids.filter(id => reusedSources.includes(id)).length;
+      const fresh = ids.length - reused;
+      return [
+        reused ? reused + (reused === 1 ? " saved source reused" : " saved sources reused") : "",
+        fresh ? fresh + (fresh === 1 ? " simulated retrieval" : " simulated retrievals") : ""
+      ].filter(Boolean).join(" · ");
+    }
+
+    function eventList(scenario, reusedSources = []) {
+      const parseNote = scenario.contextNote ? "Context carried forward from a saved question" :
+        scenario.didClarify ? "Profit metric and fiscal year confirmed" : "Question mapped to specific claims";
+      const events = [{stage: "parse", pass: "initial", note: parseNote}];
+      events.push({stage: "plan", pass: "initial", note: scenario.plan.map(action => action.source).join(" · ")});
+      events.push({stage: "retrieve", pass: "initial", note: retrievalNote(scenario.firstSources, reusedSources)});
+      events.push({stage: "verify", pass: "initial", note: scenario.gap ? "Missing measurement basis flagged" : "Evidence checked and verdict assigned"});
+      if (scenario.followPlan) {
+        events.push({stage: "plan", pass: "follow", note: "Targeted earnings release lookup"});
+        events.push({stage: "retrieve", pass: "follow", note: retrievalNote(scenario.followSources, reusedSources)});
+        events.push({stage: "verify", pass: "follow", note: "Measurement basis resolved"});
+      }
+      events.push({stage: "report", pass: "initial", note: scenario.report.status});
+      return events;
+    }
+
+    const storageKey = "financial-research-preview.sessions.v1";
+    let storageAvailable = true;
+    let stored = null;
+    try {
+      stored = JSON.parse(localStorage.getItem(storageKey));
+    } catch {
+      storageAvailable = false;
+    }
+    const hasSessions = Array.isArray(stored?.sessions) && stored.sessions.length > 0 && Boolean(stored.sessions[stored.active]);
+    const app = hasSessions ? stored : {active: 0, sessions: [{turns: [], selected: null}]};
+    const activeSession = () => app.sessions[app.active];
+    const sourceIds = scenario => [...scenario.firstSources, ...(scenario.followSources || [])];
+
+    function persist() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(app));
+        storageAvailable = true;
+      } catch {
+        storageAvailable = false;
+      }
+      document.getElementById("storage-note").textContent = storageAvailable ? "Saved on this device in this browser" : "Browser storage is unavailable. Sessions last until this page closes.";
+    }
+
+    const exampleEvents = eventList(cases.growth);
+    const state = {
+      scenario: cases.growth, displayedQuestion: cases.growth.question, status: "example",
+      events: exampleEvents, cursor: exampleEvents.length - 1,
+      stage: "report", pass: "initial", autoFollow: true, timer: null, turn: null, reusedSources: []
+    };
+
+    function tone(label) {
+      if (label === "Supported" || label === "Complete") return "";
+      if (label === "Contradicted") return " negative";
+      if (["Unresolved", "Partially supported", "Needs clarification", "Follow-up"].includes(label)) return " warning";
+      return " neutral";
+    }
+
+    function badge(label) {
+      return '<span class="status' + tone(label) + '">' + escapeHtml(label) + "</span>";
+    }
+
+    function heading(label, title, description = "", reportStatus = "") {
+      return '<div class="panel-topline"><span class="eyebrow">' + escapeHtml(label) + "</span>" + (reportStatus ? badge(reportStatus) : "") +
+        '</div><h2 id="stage-title">' + escapeHtml(title) + "</h2>" + (description ? '<p class="lede">' + escapeHtml(description) + "</p>" : "");
+    }
+
+    function table(first, second, rows) {
+      return '<table class="data-table"><thead><tr><th scope="col">' + escapeHtml(first) + '</th><th scope="col">' + escapeHtml(second) +
+        '</th></tr></thead><tbody>' + rows.map(([name, value]) => '<tr><th scope="row">' + escapeHtml(name) + "</th><td>" +
+        escapeHtml(value) + "</td></tr>").join("") + "</tbody></table>";
+    }
+
+    function evidenceMarkup(ids) {
+      return '<div class="sources">' + ids.map(id => {
+        const {title, kind, date, detail, url, id: identifier} = sources[id];
+        const reuse = state.reusedSources.includes(id) ? '<p class="reuse-mark source-reuse">Reused from this session</p>' : "";
+        return '<div>' + reuse + '<details class="disclosure"><summary>' + escapeHtml(title) + '</summary><div class="disclosure-body"><p>' +
+          escapeHtml(kind + " · " + date + (identifier ? " · " + identifier : "")) + "</p><p>" + escapeHtml(detail) +
+          '</p><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' +
+          (id === "news" ? "Open news source" : "Open primary source") + "</a></div></details></div>";
+      }).join("") + "</div>";
+    }
+
+    function section(label, content) {
+      return '<section class="block"><h3>' + escapeHtml(label) + "</h3>" + content + "</section>";
+    }
+
+    function renderReport() {
+      const report = state.scenario.report;
+      const metrics = '<div class="metrics">' + report.metrics.map(([label, value]) =>
+        '<div class="metric"><span>' + escapeHtml(label) + "</span><strong>" + escapeHtml(value) + "</strong></div>").join("") + "</div>";
+      const verdicts = report.verdicts ? '<div class="result-list">' + report.verdicts.map(([claim, verdict, reason]) =>
+        '<div class="result-claim"><strong>' + escapeHtml(claim) + "</strong>" + badge(verdict) + "<p>" + escapeHtml(reason) + "</p></div>"
+      ).join("") + "</div>" : "";
+      const timeline = report.timeline ? section("Evidence timeline", '<ol class="timeline">' + report.timeline.map(([date, label, note]) =>
+        '<li><time datetime="' + escapeHtml(date) + '">' + escapeHtml(label) + "</time><p>" + escapeHtml(note) + "</p></li>"
+      ).join("") + "</ol>") : "";
+      const operands = report.operands ? table("Fiscal year", report.operandLabel, report.operands) : "";
+      const calculation = '<details class="disclosure"><summary>View calculation</summary><div class="disclosure-body">' + operands +
+        table("Calculation", "Result", report.calc) + "</div></details>";
+      const context = state.scenario.contextNote ? '<p class="lede"><strong>From the previous question</strong> · ' +
+        escapeHtml(state.scenario.contextNote) + "</p>" : "";
+      const details = '<details class="report-support"><summary>Supporting details</summary><div class="report-support-body">' +
+        timeline + section("Calculation", calculation) + section("Source evidence", evidenceMarkup(sourceIds(state.scenario))) +
+        section("Limitations", "<p>" + escapeHtml(report.limits) + "</p>") + "</div></details>";
+      return heading("Conclusion", report.title, report.summary, report.status) + context + metrics + verdicts + details;
+    }
+
+    function renderPlan() {
+      const follow = state.pass === "follow";
+      const actions = follow ? state.scenario.followPlan : state.scenario.plan;
+      const evidence = follow ? state.scenario.followSources : state.scenario.firstSources;
+      const visitedFollow = state.events.slice(0, state.cursor + 1).some(event => event.stage === "plan" && event.pass === "follow");
+      const toggle = visitedFollow ?
+        '<div class="plan-toggle" role="group" aria-label="Planner passes"><button type="button" class="secondary" data-pass="initial" aria-pressed="' +
+        !follow + '">Initial plan</button><button type="button" class="secondary" data-pass="follow" aria-pressed="' +
+        follow + '">Follow-up plan</button></div>' : "";
+      return heading("Planner", follow ? "Targeted follow-up" : "Evidence plan",
+        follow ? state.scenario.gap : "The planner chooses the sources and the evidence each claim needs.",
+        visitedFollow ? "" : "Initial plan") + toggle +
+        '<ol class="plan-list">' + actions.map((action, index) =>
+          '<li><div class="eyebrow">' + escapeHtml(action.source) + '</div><p class="request">' + escapeHtml(action.request) +
+          '</p><p class="plan-claim"><strong>Claim</strong> · ' + escapeHtml(action.claim) + "</p>" +
+          (state.reusedSources.includes(evidence[index]) ? '<div class="reuse-mark">Reuse saved evidence</div>' : "") +
+          "<p>" + escapeHtml(action.reason) + "</p></li>"
+        ).join("") + "</ol>";
+    }
+
+    function renderParse() {
+      if (state.status === "clarification") {
+        return heading("Parse", "Clarify the profit claim", "Choose which measure and fiscal year you want to compare.", "Needs clarification") +
+          '<form id="clarification-form" class="clarify"><label>Profit metric<select name="metric" required>' +
+          '<option value="">Choose a metric</option><option value="operating">Operating income</option><option value="net">Net income</option></select></label>' +
+          '<label>Fiscal year<select name="year" required><option value="">Choose a fiscal year</option><option value="2024">FY2024</option>' +
+          '<option value="2023">FY2023</option></select></label><button class="primary" type="submit">Continue investigation <span aria-hidden="true">→</span></button></form>';
+      }
+      const fields = [
+        ["Company", "Microsoft (MSFT)"], ["Intent", state.scenario.intent], ["Reporting period", state.scenario.period],
+        ["Claims", state.scenario.claims.join(" · ")]
+      ];
+      if (state.scenario.parentQuestion) fields.push(["Follow-up to", state.scenario.parentQuestion], ["Context", state.scenario.contextNote]);
+      return heading("Parse", "What the agent understood") + '<dl class="structured">' +
+        fields.map(([label, value]) => "<dt>" + escapeHtml(label) + "</dt><dd>" + escapeHtml(value) + "</dd>").join("") + "</dl>";
+    }
+
+    function renderStage() {
+      if (state.status === "ready") {
+        panel.innerHTML = heading("Research session", "Start an investigation", "Choose an example above, then run it. Your completed report will appear under Session questions.");
+        return;
+      }
+      const visible = state.events.slice(0, state.cursor + 1).some(event => event.stage === state.stage && event.pass === state.pass);
+      if (!visible) {
+        panel.innerHTML = heading(labels[state.stage], "Waiting for this step", "The details appear when the investigation reaches this step.");
+        return;
+      }
+      switch (state.stage) {
+        case "parse": panel.innerHTML = renderParse(); break;
+        case "plan": panel.innerHTML = renderPlan(); break;
+        case "retrieve": {
+          const follow = state.pass === "follow";
+          const ids = follow ? state.scenario.followSources : state.scenario.firstSources;
+          const description = ids.every(id => state.reusedSources.includes(id)) ?
+            "The session already contains every source needed for this step." : "These are the records returned for this plan.";
+          panel.innerHTML = heading("Retrieve", follow ? "Follow-up evidence" : "Evidence for this step", description) +
+            section("Sources", evidenceMarkup(ids));
+          break;
+        }
+        case "verify": {
+          const gap = state.scenario.gap && state.pass === "initial";
+          panel.innerHTML = gap ? heading("Verify", "Measurement basis missing", state.scenario.gap, "Follow-up") +
+            section("Next step", "<p>Return to the planner with one request to check how the earnings release defines the 15% figure.</p>") :
+            heading("Verify", "Evidence checked", state.scenario.check) +
+            section("Decision", "<p>Send the findings and any unresolved claims to the report.</p>");
+          break;
+        }
+        case "report": panel.innerHTML = renderReport(); break;
+      }
+    }
+
+    function renderWorkflow() {
+      const active = state.events[state.cursor];
+      const visited = state.events.slice(0, state.cursor + 1);
+      const runLabel = {
+        example: "Example report", complete: "Complete", clarification: "Needs clarification",
+        ready: "Ready", saved: "Saved report",
+        running: active?.pass === "follow" ? "Follow-up · " + labels[active.stage] : labels[active?.stage] + " in progress"
+      }[state.status];
+      status.className = "status" + tone(state.status === "running" && active.pass === "follow" ? "Follow-up" : runLabel);
+      if (status.textContent !== runLabel) status.textContent = runLabel;
+      steps.setAttribute("aria-busy", String(state.status === "running"));
+      for (const [id, button] of Object.entries(stageButtons)) {
+        const reached = visited.some(event => event.stage === id);
+        button.classList.toggle("current", active?.stage === id);
+        button.classList.toggle("done", reached);
+        button.classList.toggle("pending", !reached);
+        button.setAttribute("aria-pressed", String(state.stage === id));
+      }
+    }
+
+    function renderSidebar() {
+      document.getElementById("run-details").hidden = state.status === "ready";
+      if (state.status === "ready") return;
+      const shown = state.events.slice(0, state.cursor + 1);
+      const retrievals = shown.filter(event => event.stage === "retrieve");
+      const ids = retrievals.flatMap(event => event.pass === "follow" ? state.scenario.followSources : state.scenario.firstSources);
+      const services = [...new Set(retrievals.flatMap(event =>
+        (event.pass === "follow" ? state.scenario.followPlan : state.scenario.plan).map(action => action.source)))];
+      const reused = ids.filter(id => state.reusedSources.includes(id)).length;
+      const fresh = ids.length - reused;
+      document.getElementById("run-question").textContent = state.displayedQuestion;
+      document.getElementById("run-facts").innerHTML =
+        "<div><dt>Sources used</dt><dd>" + escapeHtml(services.join(" · ") || "—") + "</dd></div>" +
+        "<div><dt>New lookups</dt><dd>" + fresh + (fresh === 1 ? " simulated retrieval" : " simulated retrievals") + "</dd></div>" +
+        "<div><dt>Session evidence</dt><dd>" + reused + (reused === 1 ? " reused source" : " reused sources") + "</dd></div>" +
+        "<div><dt>Evidence follow-ups</dt><dd>" + Number(shown.some(event => event.pass === "follow")) + " of 1</dd></div>";
+      history.innerHTML = shown.map((event, index) => {
+        const label = (event.pass === "follow" ? "Follow-up · " : "") + labels[event.stage];
+        return '<li><button type="button" data-event="' + index + '" aria-current="' +
+          (state.stage === event.stage && state.pass === event.pass) + '">' + escapeHtml(label) + "</button><small>" +
+          escapeHtml(event.note) + "</small></li>";
+      }).join("");
+    }
+
+    function render() {
+      renderWorkflow();
+      renderStage();
+      renderSidebar();
+      renderSession();
+    }
+
+    function canAskFollowUp() {
+      return state.turn !== null && activeSession().turns[state.turn]?.scenario.canFollow;
+    }
+
+    function renderSession() {
+      const running = state.status === "running";
+      sessionList.innerHTML = app.sessions.map((session, index) => '<button type="button" data-session="' + index +
+        '" aria-current="' + (app.active === index) + '"' + (running ? " disabled" : "") + '>Session ' + (index + 1) +
+        (session.turns.length ? " · " + escapeHtml(session.turns[0].scenario.label) : "") + "</button>").join("");
+      newSession.disabled = running;
+      runButton.disabled = running;
+      followUp.hidden = !canAskFollowUp();
+      const turns = activeSession().turns;
+      document.getElementById("no-turns").hidden = turns.length > 0;
+      sessionTurns.hidden = turns.length === 0;
+      sessionTurns.innerHTML = turns.map((turn, index) =>
+        '<button type="button" data-turn="' + index + '" aria-current="' + (state.turn === index) + '"' + (running ? " disabled" : "") +
+        '>' + escapeHtml(turn.question) + "<span>" + (turn.scenario.contextNote ? "Follow-up · " : "") +
+        escapeHtml(turn.scenario.report.status) + "</span></button>").join("");
+    }
+
+    function setSessionMenu(expanded) {
+      sessionSidebar.dataset.expanded = String(expanded);
+      sessionMenuToggle.setAttribute("aria-expanded", String(expanded));
+    }
+
+    function closePromptAlert() {
+      promptError.hidden = true;
+      question.removeAttribute("aria-invalid");
+    }
+
+    function reopen(index) {
+      const session = activeSession();
+      const turn = session.turns[index];
+      clearTimeout(state.timer);
+      session.selected = turn ? index : null;
+      const events = turn ? eventList(turn.scenario, turn.reusedSources) : [];
+      Object.assign(state, {
+        scenario: turn?.scenario || null, displayedQuestion: turn?.question || "", turn: session.selected,
+        reusedSources: turn?.reusedSources || [], status: turn ? "saved" : "ready", events, cursor: events.length - 1,
+        stage: turn ? "report" : "parse", pass: "initial", autoFollow: true, timer: null
+      });
+      question.value = turn?.question || "";
+      closePromptAlert();
+      updateExamples();
+      historyDetails.open = false;
+      persist();
+      render();
+    }
+
+    function saveReport() {
+      const session = activeSession();
+      state.turn = session.turns.length;
+      session.turns.push({question: state.displayedQuestion, scenario: state.scenario, reusedSources: state.reusedSources});
+      session.selected = state.turn;
+      persist();
+    }
+
+    function selectView(stage, pass = "initial") {
+      state.stage = stage;
+      state.pass = pass;
+      state.autoFollow = false;
+      render();
+    }
+
+    function showStep(stage) {
+      const matching = state.events.slice(0, state.cursor + 1).filter(event => event.stage === stage);
+      const running = state.events[state.cursor];
+      const currentPass = stage === running?.stage && state.status === "running" ? running.pass : "initial";
+      selectView(stage, matching.some(event => event.pass === currentPass) ? currentPass : "initial");
+    }
+
+    function advance() {
+      state.cursor += 1;
+      const event = state.events[state.cursor];
+      if (state.autoFollow) {
+        state.stage = event.stage;
+        state.pass = event.pass;
+      }
+      if (event.stage === "report") {
+        state.status = "complete";
+        state.timer = null;
+        saveReport();
+      } else {
+        state.timer = setTimeout(advance, reduceMotion.matches ? 100 : (event.stage === "verify" ? 850 : 530));
+      }
+      renderWorkflow();
+      if (state.autoFollow || (event.stage === state.stage && event.pass === state.pass)) renderStage();
+      renderSidebar();
+      if (state.status === "complete") renderSession();
+    }
+
+    function run(id, input) {
+      clearTimeout(state.timer);
+      const needsClarification = id === "profit";
+      const scenario = id === "follow-up" ? operatingIncomeFollowUp(activeSession().turns[state.turn].question) : cases[id];
+      const cached = new Set(activeSession().turns.flatMap(turn => sourceIds(turn.scenario)));
+      const reusedSources = needsClarification ? [] : sourceIds(scenario).filter(source => cached.has(source));
+      Object.assign(state, {
+        scenario, displayedQuestion: input, cursor: 0, stage: "parse", turn: null, reusedSources,
+        pass: "initial", autoFollow: true, timer: null,
+        status: needsClarification ? "clarification" : "running",
+        events: needsClarification ?
+          [{stage: "parse", pass: "initial", note: "Profit metric and fiscal year need clarification"}] : eventList(scenario, reusedSources)
+      });
+      historyDetails.open = false;
+      render();
+      if (needsClarification) panel.querySelector("select").focus();
+      else state.timer = setTimeout(advance, reduceMotion.matches ? 100 : 450);
+    }
+
+    function updateExamples() {
+      const current = lookup(question.value);
+      for (const button of examples.querySelectorAll("button")) {
+        button.setAttribute("aria-pressed", String(button.dataset.example === current));
+      }
+    }
+
+    examples.addEventListener("click", event => {
+      const button = event.target.closest("button[data-example]");
+      if (!button) return;
+      question.value = cases[button.dataset.example].question;
+      closePromptAlert();
+      updateExamples();
+    });
+    question.addEventListener("input", () => {
+      closePromptAlert();
+      updateExamples();
+    });
+    question.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        question.form.requestSubmit();
+      }
+    });
+    document.getElementById("prompt-form").addEventListener("submit", event => {
+      event.preventDefault();
+      if (state.status === "running") return;
+      const isFollowUp = normalize(question.value) === normalize(followUpQuestion);
+      const id = isFollowUp && canAskFollowUp() ? "follow-up" : lookup(question.value);
+      if (!id) {
+        promptError.textContent = isFollowUp ?
+          "Run or reopen a revenue growth or rates-and-earnings report in this session first." :
+          "Choose a demo example above, or use the suggested follow-up on a compatible report.";
+        promptError.hidden = false;
+        question.setAttribute("aria-invalid", "true");
+        question.focus();
+        return;
+      }
+      run(id, question.value.trim());
+    });
+    document.getElementById("follow-up-prompt").addEventListener("click", () => {
+      question.value = followUpQuestion;
+      closePromptAlert();
+      updateExamples();
+      question.focus();
+    });
+    sessionMenuToggle.addEventListener("click", () => {
+      setSessionMenu(sessionSidebar.dataset.expanded !== "true");
+    });
+    sessionSidebar.addEventListener("keydown", event => {
+      if (event.key !== "Escape" || !compactSessions.matches || sessionSidebar.dataset.expanded !== "true") return;
+      event.preventDefault();
+      setSessionMenu(false);
+      sessionMenuToggle.focus();
+    });
+    sessionList.addEventListener("click", event => {
+      const button = event.target.closest("button[data-session]");
+      if (!button || state.status === "running") return;
+      app.active = Number(button.dataset.session);
+      reopen(activeSession().selected);
+      if (compactSessions.matches) {
+        setSessionMenu(false);
+        panel.focus();
+      } else {
+        sessionList.querySelector('[aria-current="true"]').focus();
+      }
+    });
+    newSession.addEventListener("click", () => {
+      if (state.status === "running") return;
+      app.active = app.sessions.push({turns: [], selected: null}) - 1;
+      reopen(null);
+      setSessionMenu(false);
+      question.focus();
+    });
+    sessionTurns.addEventListener("click", event => {
+      const button = event.target.closest("button[data-turn]");
+      if (!button || state.status === "running") return;
+      reopen(Number(button.dataset.turn));
+      setSessionMenu(false);
+      panel.focus();
+    });
+    panel.addEventListener("click", event => {
+      const button = event.target.closest("button[data-pass]");
+      if (!button) return;
+      const pass = button.dataset.pass;
+      selectView("plan", pass);
+      panel.querySelector('button[data-pass="' + pass + '"]').focus();
+    });
+    panel.addEventListener("submit", event => {
+      if (event.target.id !== "clarification-form" || state.status !== "clarification") return;
+      event.preventDefault();
+      const answers = new FormData(event.target);
+      const metric = answers.get("metric");
+      const year = Number(answers.get("year"));
+      if (!Object.hasOwn(profit, metric) || ![2023, 2024].includes(year)) return;
+      state.scenario = clarifiedCase(metric, year);
+      state.scenario.didClarify = true;
+      state.reusedSources = activeSession().turns.some(turn => sourceIds(turn.scenario).includes("filing")) ? ["filing"] : [];
+      state.events = eventList(state.scenario, state.reusedSources);
+      state.status = "running";
+      state.autoFollow = true;
+      render();
+      panel.focus();
+      state.timer = setTimeout(advance, reduceMotion.matches ? 100 : 400);
+    });
+    history.addEventListener("click", event => {
+      const button = event.target.closest("button[data-event]");
+      if (!button) return;
+      const entry = state.events[Number(button.dataset.event)];
+      selectView(entry.stage, entry.pass);
+      panel.focus();
+    });
+
+    if (hasSessions) {
+      reopen(activeSession().selected);
+    } else {
+      question.value = cases.growth.question;
+      document.getElementById("storage-note").textContent = storageAvailable ? "Completed runs are saved in this browser" : "Browser storage is unavailable. Sessions last until this page closes.";
+      updateExamples();
+      render();
+    }
+  </script>
+</body>
+</html>

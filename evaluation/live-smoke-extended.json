@@ -1,0 +1,231 @@
+{
+  "mode": "live-smoke",
+  "live_timing": {
+    "count": 6,
+    "median_seconds": 23.0075
+  },
+  "runs": [
+    {
+      "id": "revenue",
+      "status": "Failed",
+      "active_seconds": 19.297,
+      "saved_read_seconds": 0.00324,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": "OpenRouter did not return valid Parse output. Check the selected model.",
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1679,
+            "completion_tokens": 2023,
+            "total_tokens": 3702
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter did not return valid Parse output. Check the selected model."
+        }
+      ]
+    },
+    {
+      "id": "conflict",
+      "status": "Failed",
+      "active_seconds": 50.234,
+      "saved_read_seconds": 0.00328,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "rates",
+      "status": "Failed",
+      "active_seconds": 50.218,
+      "saved_read_seconds": 0.00309,
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 1
+      },
+      "verdict": null,
+      "error": "OpenRouter Chat Completions timed out.",
+      "model_usage": [],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": [
+        {
+          "stage": "Parse",
+          "outcome": "retry",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        },
+        {
+          "stage": "Parse",
+          "outcome": "error",
+          "message": "OpenRouter Chat Completions timed out."
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "status": "Waiting for clarification",
+      "active_seconds": 15.281,
+      "saved_read_seconds": 0.00299,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1686,
+            "completion_tokens": 1471,
+            "total_tokens": 3157
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": []
+    },
+    {
+      "id": "profit",
+      "status": "Waiting for clarification",
+      "active_seconds": 20.781,
+      "saved_read_seconds": 0.00308,
+      "counts": {
+        "lookups": 0,
+        "models": 1,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "verdict": null,
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1674,
+            "completion_tokens": 2180,
+            "total_tokens": 3854
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [],
+      "lookup_issues": []
+    },
+    {
+      "id": "quarterly_eps",
+      "status": "Complete",
+      "active_seconds": 25.234,
+      "saved_read_seconds": 0.00419,
+      "counts": {
+        "lookups": 4,
+        "models": 3,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 1,
+        "retries": 0
+      },
+      "verdict": "Unresolved",
+      "error": null,
+      "model_usage": [
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 1682,
+            "completion_tokens": 1356,
+            "total_tokens": 3038
+          }
+        },
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 802,
+            "completion_tokens": 439,
+            "total_tokens": 1241
+          }
+        },
+        {
+          "model": "openai/gpt-5-mini",
+          "routed_provider": "OpenAI",
+          "usage": {
+            "prompt_tokens": 931,
+            "completion_tokens": 485,
+            "total_tokens": 1416
+          }
+        }
+      ],
+      "limitations": [],
+      "findings": [
+        {
+          "claim": "AAPL diluted EPS FY2024 Q4 (standalone, reported)",
+          "reason": "Missing comparable diluted eps for AAPL FY2024 Q4.",
+          "verdict": "Unresolved"
+        }
+      ],
+      "lookup_issues": []
+    }
+  ]
+}

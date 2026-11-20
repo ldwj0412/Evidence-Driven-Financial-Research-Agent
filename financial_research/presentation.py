@@ -1,0 +1,61 @@
+from decimal import Decimal
+
+from .domain import METRICS
+from .fixtures import PROMPTS
+from .verification import render_number
+
+SOURCES = {"sec": "SEC EDGAR", "fred": "FRED", "news": "News search"}
+
+
+def workspace_view(turn):
+    """Prepare a display projection without changing the saved report."""
+    if not turn:
+        return None
+    result = dict(turn)
+    evidence = result.get("evidence", [])
+    report = result.get("report")
+    if report:
+        report = {**report, "findings": [display_finding(item) for item in report["findings"]]}
+        result["report"] = report
+        claims = result["parsed"]["claims"]
+        if (
+            len(claims) == 1
+            and claims[0]["entities"] == ["MSFT"]
+            and claims[0]["measure"] == "acceleration"
+            and claims[0]["metric"] == "revenue"
+        ):
+            report["suggestion"] = PROMPTS["operating"]
+        elif claims and result["mode"] == "replay" and claims[0]["metric"] == "operating_income":
+            report["suggestion"] = PROMPTS["missing"]
+        refs = set(report["evidence_ids"]) | {item["evidence_id"] for item in report["timeline"]}
+        report["sources"] = list(
+            dict.fromkeys(SOURCES[item["source"]] for item in evidence if item["id"] in refs)
+        )
+    result["evidence"] = [
+        {
+            **item,
+            "metric_label": METRICS.get(item.get("metric"), item.get("metric")),
+            "display_value": render_number(Decimal(item["value"]), item["unit"])
+            if item["type"] == "fact"
+            else None,
+        }
+        for item in evidence
+    ]
+    return result
+
+
+def display_finding(finding):
+    return {
+        **finding,
+        "calculations": [
+            {
+                **item,
+                "display_value": render_number(Decimal(item["result"]), item["unit"]),
+                "operands": [
+                    {**operand, "display_value": render_number(Decimal(operand["value"]), operand["unit"])}
+                    for operand in item["operands"]
+                ],
+            }
+            for item in finding["calculations"]
+        ],
+    }

@@ -1,0 +1,766 @@
+{
+  "attempts": [
+    {
+      "id": "31530cf1453c41248727db0cac9b927d",
+      "session_id": "cd2a33b9349342f9af8cce99b5775411",
+      "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+      "parent_id": null,
+      "question": "Did Microsoft\u2019s profit increase?",
+      "mode": "live",
+      "cutoff": "2026-11-20T03:24:29.042859+00:00",
+      "created_at": "2026-11-20T03:24:29.042859+00:00",
+      "status": "Failed",
+      "parsed": {
+        "claims": [],
+        "clarification": {
+          "message": "\u201cProfit\u201d is ambiguous. Which metric and which periods should I compare? Defaults: reported basis and consolidated scope. Please pick a metric below and specify the fiscal periods (examples: \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\").",
+          "fields": [
+            {
+              "name": "metric",
+              "label": "Which metric do you mean by \u201cprofit\u201d?",
+              "control": "select",
+              "options": [
+                {
+                  "value": "gross_profit",
+                  "label": "Gross profit"
+                },
+                {
+                  "value": "operating_income",
+                  "label": "Operating income"
+                },
+                {
+                  "value": "net_income",
+                  "label": "Net income"
+                },
+                {
+                  "value": "diluted_eps",
+                  "label": "Diluted EPS"
+                }
+              ]
+            },
+            {
+              "name": "period",
+              "label": "Which fiscal periods should I compare? (e.g. \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\")",
+              "control": "text",
+              "options": []
+            }
+          ]
+        },
+        "carried": [
+          "company",
+          "basis",
+          "scope"
+        ]
+      },
+      "active_seconds": 36.25,
+      "clarification": {
+        "message": "\u201cProfit\u201d is ambiguous. Which metric and which periods should I compare? Defaults: reported basis and consolidated scope. Please pick a metric below and specify the fiscal periods (examples: \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\").",
+        "fields": [
+          {
+            "name": "metric",
+            "label": "Which metric do you mean by \u201cprofit\u201d?",
+            "control": "select",
+            "options": [
+              {
+                "value": "gross_profit",
+                "label": "Gross profit"
+              },
+              {
+                "value": "operating_income",
+                "label": "Operating income"
+              },
+              {
+                "value": "net_income",
+                "label": "Net income"
+              },
+              {
+                "value": "diluted_eps",
+                "label": "Diluted EPS"
+              }
+            ]
+          },
+          {
+            "name": "period",
+            "label": "Which fiscal periods should I compare? (e.g. \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\")",
+            "control": "text",
+            "options": []
+          }
+        ]
+      },
+      "answers": {
+        "metric": "operating_income",
+        "period": "FY2024"
+      },
+      "error": "Choose an as-of date on or before today in U.S. Eastern time.",
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "events": [
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 1,
+          "timestamp": "2026-11-20T03:24:29.113857+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "started",
+          "data": {}
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 2,
+          "timestamp": "2026-11-20T03:24:29.121858+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "started",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 3,
+          "timestamp": "2026-11-20T03:24:51.330174+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "complete",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1,
+            "elapsed_ms": 22219,
+            "bytes": 37710
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 4,
+          "timestamp": "2026-11-20T03:24:51.335243+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "metadata",
+          "data": {
+            "model": "openai/gpt-5-mini",
+            "routed_provider": "OpenAI",
+            "usage": {
+              "prompt_tokens": 1674,
+              "completion_tokens": 2376,
+              "total_tokens": 4050
+            }
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 5,
+          "timestamp": "2026-11-20T03:24:51.342243+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "complete",
+          "data": {
+            "output": {
+              "claims": [],
+              "clarification": {
+                "message": "\u201cProfit\u201d is ambiguous. Which metric and which periods should I compare? Defaults: reported basis and consolidated scope. Please pick a metric below and specify the fiscal periods (examples: \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\").",
+                "fields": [
+                  {
+                    "name": "metric",
+                    "label": "Which metric do you mean by \u201cprofit\u201d?",
+                    "control": "select",
+                    "options": [
+                      {
+                        "value": "gross_profit",
+                        "label": "Gross profit"
+                      },
+                      {
+                        "value": "operating_income",
+                        "label": "Operating income"
+                      },
+                      {
+                        "value": "net_income",
+                        "label": "Net income"
+                      },
+                      {
+                        "value": "diluted_eps",
+                        "label": "Diluted EPS"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "period",
+                    "label": "Which fiscal periods should I compare? (e.g. \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\")",
+                    "control": "text",
+                    "options": []
+                  }
+                ]
+              },
+              "as_of": null,
+              "carried": [
+                "company",
+                "basis",
+                "scope"
+              ],
+              "out_of_scope": null
+            },
+            "cutoff": "2026-11-20T03:24:29.042859+00:00"
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 6,
+          "timestamp": "2026-11-20T03:24:51.346242+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "clarification",
+          "outcome": "requested",
+          "data": {
+            "message": "\u201cProfit\u201d is ambiguous. Which metric and which periods should I compare? Defaults: reported basis and consolidated scope. Please pick a metric below and specify the fiscal periods (examples: \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\").",
+            "fields": [
+              {
+                "name": "metric",
+                "label": "Which metric do you mean by \u201cprofit\u201d?",
+                "control": "select",
+                "options": [
+                  {
+                    "value": "gross_profit",
+                    "label": "Gross profit"
+                  },
+                  {
+                    "value": "operating_income",
+                    "label": "Operating income"
+                  },
+                  {
+                    "value": "net_income",
+                    "label": "Net income"
+                  },
+                  {
+                    "value": "diluted_eps",
+                    "label": "Diluted EPS"
+                  }
+                ]
+              },
+              {
+                "name": "period",
+                "label": "Which fiscal periods should I compare? (e.g. \"FY2024 vs FY2023\" or \"Q1 FY2024 vs Q1 FY2023\")",
+                "control": "text",
+                "options": []
+              }
+            ]
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 7,
+          "timestamp": "2026-11-20T03:24:51.353242+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "status",
+          "outcome": "waiting",
+          "data": {
+            "message": "Waiting for clarification"
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 8,
+          "timestamp": "2026-11-20T03:24:51.367241+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "clarification",
+          "outcome": "resumed",
+          "data": {
+            "answers": {
+              "metric": "operating_income",
+              "period": "FY2024"
+            }
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 9,
+          "timestamp": "2026-11-20T03:24:51.395243+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "started",
+          "data": {}
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 10,
+          "timestamp": "2026-11-20T03:24:51.402242+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "started",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 11,
+          "timestamp": "2026-11-20T03:25:05.300100+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "complete",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1,
+            "elapsed_ms": 13907,
+            "bytes": 19400
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 12,
+          "timestamp": "2026-11-20T03:25:05.304101+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "metadata",
+          "data": {
+            "model": "openai/gpt-5-mini",
+            "routed_provider": "OpenAI",
+            "usage": {
+              "prompt_tokens": 1688,
+              "completion_tokens": 1465,
+              "total_tokens": 3153
+            }
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 13,
+          "timestamp": "2026-11-20T03:25:05.307100+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "error",
+          "data": {
+            "message": "Choose an as-of date on or before today in U.S. Eastern time."
+          }
+        },
+        {
+          "run_id": "fc0ca79623cd455f8d5d5e065b8f351c",
+          "sequence": 14,
+          "timestamp": "2026-11-20T03:25:05.313101+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "status",
+          "outcome": "failed",
+          "data": {
+            "message": "Choose an as-of date on or before today in U.S. Eastern time."
+          }
+        }
+      ]
+    },
+    {
+      "id": "dfd2cfb8399444a38649cf9d5444814e",
+      "session_id": "c34d387bcc7a4ffd95c10c0c99482305",
+      "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+      "parent_id": null,
+      "question": "Did Microsoft\u2019s profit increase?",
+      "mode": "live",
+      "cutoff": "2026-11-20T03:26:13.823121+00:00",
+      "created_at": "2026-11-20T03:26:13.823121+00:00",
+      "status": "Failed",
+      "parsed": {
+        "claims": [],
+        "clarification": {
+          "message": "I can check Microsoft (MSFT). Which profit metric do you mean, and which periods should I compare? For example: \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\".",
+          "fields": [
+            {
+              "name": "metric",
+              "label": "Which profit metric?",
+              "control": "select",
+              "options": [
+                {
+                  "value": "gross_profit",
+                  "label": "Gross profit"
+                },
+                {
+                  "value": "operating_income",
+                  "label": "Operating income"
+                },
+                {
+                  "value": "net_income",
+                  "label": "Net income"
+                },
+                {
+                  "value": "diluted_eps",
+                  "label": "Diluted EPS"
+                }
+              ]
+            },
+            {
+              "name": "period",
+              "label": "Specify the comparison (e.g., \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\")",
+              "control": "text",
+              "options": []
+            }
+          ]
+        },
+        "carried": [
+          "company",
+          "basis",
+          "scope"
+        ]
+      },
+      "active_seconds": 33.297,
+      "clarification": {
+        "message": "I can check Microsoft (MSFT). Which profit metric do you mean, and which periods should I compare? For example: \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\".",
+        "fields": [
+          {
+            "name": "metric",
+            "label": "Which profit metric?",
+            "control": "select",
+            "options": [
+              {
+                "value": "gross_profit",
+                "label": "Gross profit"
+              },
+              {
+                "value": "operating_income",
+                "label": "Operating income"
+              },
+              {
+                "value": "net_income",
+                "label": "Net income"
+              },
+              {
+                "value": "diluted_eps",
+                "label": "Diluted EPS"
+              }
+            ]
+          },
+          {
+            "name": "period",
+            "label": "Specify the comparison (e.g., \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\")",
+            "control": "text",
+            "options": []
+          }
+        ]
+      },
+      "answers": {
+        "metric": "operating_income",
+        "period": "FY2024 vs FY2023"
+      },
+      "error": "Choose an as-of date on or before today in U.S. Eastern time.",
+      "counts": {
+        "lookups": 0,
+        "models": 2,
+        "reused": 0,
+        "cache_hits": 0,
+        "followups": 0,
+        "retries": 0
+      },
+      "events": [
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 1,
+          "timestamp": "2026-11-20T03:26:13.894123+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "started",
+          "data": {}
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 2,
+          "timestamp": "2026-11-20T03:26:13.901121+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "started",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 3,
+          "timestamp": "2026-11-20T03:26:31.396081+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "complete",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1,
+            "elapsed_ms": 17500,
+            "bytes": 31248
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 4,
+          "timestamp": "2026-11-20T03:26:31.402081+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "metadata",
+          "data": {
+            "model": "openai/gpt-5-mini",
+            "routed_provider": "OpenAI",
+            "usage": {
+              "prompt_tokens": 1674,
+              "completion_tokens": 1959,
+              "total_tokens": 3633
+            }
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 5,
+          "timestamp": "2026-11-20T03:26:31.410082+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "complete",
+          "data": {
+            "output": {
+              "claims": [],
+              "clarification": {
+                "message": "I can check Microsoft (MSFT). Which profit metric do you mean, and which periods should I compare? For example: \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\".",
+                "fields": [
+                  {
+                    "name": "metric",
+                    "label": "Which profit metric?",
+                    "control": "select",
+                    "options": [
+                      {
+                        "value": "gross_profit",
+                        "label": "Gross profit"
+                      },
+                      {
+                        "value": "operating_income",
+                        "label": "Operating income"
+                      },
+                      {
+                        "value": "net_income",
+                        "label": "Net income"
+                      },
+                      {
+                        "value": "diluted_eps",
+                        "label": "Diluted EPS"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "period",
+                    "label": "Specify the comparison (e.g., \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\")",
+                    "control": "text",
+                    "options": []
+                  }
+                ]
+              },
+              "as_of": null,
+              "carried": [
+                "company",
+                "basis",
+                "scope"
+              ],
+              "out_of_scope": null
+            },
+            "cutoff": "2026-11-20T03:26:13.823121+00:00"
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 6,
+          "timestamp": "2026-11-20T03:26:31.414082+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "clarification",
+          "outcome": "requested",
+          "data": {
+            "message": "I can check Microsoft (MSFT). Which profit metric do you mean, and which periods should I compare? For example: \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\".",
+            "fields": [
+              {
+                "name": "metric",
+                "label": "Which profit metric?",
+                "control": "select",
+                "options": [
+                  {
+                    "value": "gross_profit",
+                    "label": "Gross profit"
+                  },
+                  {
+                    "value": "operating_income",
+                    "label": "Operating income"
+                  },
+                  {
+                    "value": "net_income",
+                    "label": "Net income"
+                  },
+                  {
+                    "value": "diluted_eps",
+                    "label": "Diluted EPS"
+                  }
+                ]
+              },
+              {
+                "name": "period",
+                "label": "Specify the comparison (e.g., \"FY2024 vs FY2023\" or \"Q3 FY2024 vs Q3 FY2023\")",
+                "control": "text",
+                "options": []
+              }
+            ]
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 7,
+          "timestamp": "2026-11-20T03:26:31.421699+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "status",
+          "outcome": "waiting",
+          "data": {
+            "message": "Waiting for clarification"
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 8,
+          "timestamp": "2026-11-20T03:26:45.724917+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "clarification",
+          "outcome": "resumed",
+          "data": {
+            "answers": {
+              "metric": "operating_income",
+              "period": "FY2024 vs FY2023"
+            }
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 9,
+          "timestamp": "2026-11-20T03:26:45.786917+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "started",
+          "data": {}
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 10,
+          "timestamp": "2026-11-20T03:26:45.793916+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "started",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 11,
+          "timestamp": "2026-11-20T03:27:01.415095+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "complete",
+          "data": {
+            "tool": "OpenRouter Chat Completions",
+            "url": "https://openrouter.ai/api/v1/chat/completions",
+            "purpose": "Parse",
+            "parameters": {},
+            "model": "openai/gpt-5-mini",
+            "attempt": 1,
+            "elapsed_ms": 15625,
+            "bytes": 25261
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 12,
+          "timestamp": "2026-11-20T03:27:01.420096+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "model",
+          "outcome": "metadata",
+          "data": {
+            "model": "openai/gpt-5-mini",
+            "routed_provider": "OpenAI",
+            "usage": {
+              "prompt_tokens": 1692,
+              "completion_tokens": 1756,
+              "total_tokens": 3448
+            }
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 13,
+          "timestamp": "2026-11-20T03:27:01.425096+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "stage",
+          "outcome": "error",
+          "data": {
+            "message": "Choose an as-of date on or before today in U.S. Eastern time."
+          }
+        },
+        {
+          "run_id": "6ceddf4e5dc64f12a1a51d148788d80c",
+          "sequence": 14,
+          "timestamp": "2026-11-20T03:27:01.432096+00:00",
+          "stage": "Parse",
+          "pass_no": 0,
+          "kind": "status",
+          "outcome": "failed",
+          "data": {
+            "message": "Choose an as-of date on or before today in U.S. Eastern time."
+          }
+        }
+      ]
+    }
+  ]
+}
