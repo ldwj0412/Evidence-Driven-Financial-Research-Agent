@@ -279,14 +279,17 @@ class Investigation:
 
     def begin(self, stage, pass_no=0):
         self.stage, self.pass_no = stage, pass_no
+        self.stage_started = self.budget.elapsed
         self.emit("stage", "started", {})
 
     def complete(self, output):
-        self.emit("stage", "complete", output)
+        elapsed_ms = round((self.budget.elapsed - self.stage_started) * 1000, 3)
+        self.emit("stage", "complete", {**output, "elapsed_ms": elapsed_ms})
 
     def failure(self, message):
         safe = self.settings.redact(message)
-        self.emit("stage", "error", {"message": safe})
+        elapsed_ms = round((self.budget.elapsed - self.stage_started) * 1000, 3)
+        self.emit("stage", "error", {"message": safe, "elapsed_ms": elapsed_ms})
         return {"problem": safe}
 
     def build(self):

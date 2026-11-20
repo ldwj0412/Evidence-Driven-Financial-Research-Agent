@@ -46,6 +46,11 @@ def test_reuse_restart_and_conflict_history(tmp_path):
         ("Report", 0),
     ]
     assert before_restart["report"]["overall"] == "Contradicted"
+    assert all(
+        event["data"]["elapsed_ms"] >= 0
+        for event in before_restart["events"]
+        if event["kind"] == "stage" and event["outcome"] == "complete"
+    )
     assert before_restart["report"]["conclusion"] == (
         "The two figures don’t conflict. Microsoft’s FY2024 revenue growth was 16% as reported "
         "and 15% in constant currency. Constant currency adjusts for exchange-rate changes."

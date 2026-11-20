@@ -1,7 +1,8 @@
 const stages = ["Parse", "Plan", "Retrieve", "Verify", "Report"];
 const sourcesDisclosure = "support-sources";
 const activityDisclosure = "run-activity";
-const defaultOpenDisclosures = [sourcesDisclosure, activityDisclosure];
+const questionsDisclosure = "session-questions";
+const defaultOpenDisclosures = [sourcesDisclosure, activityDisclosure, questionsDisclosure];
 const shortTime = new Intl.DateTimeFormat("en-US", {
     month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
 });
@@ -99,17 +100,19 @@ function header(data, state) {
         node("option", {value: "replay", selected: data.mode === "replay"}, "Fixture replay"));
     const form = node("form", {id: "research-form", class: "prompt-form"},
         node("label", {for: "research-question", class: "visually-hidden"}, "Research question"),
+        node("span", {class: "prompt-icon", "aria-hidden": "true"}),
         node("textarea", {id: "research-question", class: "question", required: true, maxlength: 750, rows: 1,
             placeholder: "Ask about a financial claim or company event", "data-focus": "question"}, state.draft),
-        node("button", {type: "submit", class: "primary", disabled: Boolean(state.pending)},
-            "Run investigation", node("span", {"aria-hidden": "true"}, "→")));
+        node("button", {type: "submit", class: "primary", "aria-label": "Run investigation", disabled: Boolean(state.pending)},
+            node("span", {}, "Run", node("span", {class: "run-long"}, " investigation")),
+            node("span", {"aria-hidden": "true"}, "→")));
     return node("header", {class: "masthead"}, node("div", {class: "shell"},
         node("div", {class: "brandbar"},
             node("div", {class: "brand"}, node("span", {class: "mark", "aria-hidden": "true"},
                 node("i"), node("i"), node("i")), "Financial Research Agent"),
             node("div", {class: "mode-control"}, mode)),
         node("div", {class: "hero"}, node("h1", {}, "Investigate a financial claim"),
-            node("p", {class: "intro"}, "Check financial claims against filings, economic data, and independent coverage."),
+            node("p", {class: "intro"}, "Check filings, compare figures, and see the evidence behind each answer."),
             form, data.error && node("p", {class: "prompt-error", role: "alert"}, data.error),
             node("div", {class: "examples", "aria-label": "Example questions"}, node("span", {}, "Try an example"),
                 data.examples.map(item => button(item.label, "fill", item.question, {class: "example"}))),
@@ -120,13 +123,52 @@ function header(data, state) {
                 "provider-setup", "setup-body"))));
 }
 
+function marketTexture() {
+    const canvas = node("canvas", {class: "market-texture", "aria-hidden": "true"});
+    const context = canvas.getContext("2d");
+    if (!context) return canvas;
+    new ResizeObserver(([{contentRect: {width, height}}]) => {
+        if (width === 0 || height === 0) return;
+        const scale = Math.min(devicePixelRatio || 1, 2);
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        context.scale(scale, scale);
+        // Synthetic candlesticks are decorative and independent of the report data.
+        const draw = (x, y, count, spacing, amplitude, phase) => {
+            let previous = y;
+            for (let index = 0; index < count; index++) {
+                const column = x + index * spacing;
+                const displacement = Math.sin(index * .55 + phase) * 15 + Math.cos(index * .21) * 22;
+                const next = y + (displacement - index * .8) * amplitude;
+                const top = Math.min(previous, next);
+                const bottom = Math.max(previous, next);
+                context.strokeStyle = context.fillStyle = next > previous ? "#a55d49" : "#286f65";
+                context.globalAlpha = .085 + .12 * Math.sin(Math.PI * index / count);
+                context.beginPath();
+                context.moveTo(column, top - (3 + index % 4) * amplitude);
+                context.lineTo(column, bottom + (4 + index % 3) * amplitude);
+                context.stroke();
+                context.fillRect(column - 2, top, 4, Math.max(bottom - top, 1));
+                previous = next;
+            }
+        };
+        const spacing = Math.max(6, width * .012);
+        draw(width * .64, 102, 33, spacing, 1.35, 1.6);
+        draw(-12, Math.min(240, height * .28), 25, spacing, 1.15, 2.7);
+        draw(-12, height * .74, 40, spacing, 1.65, .1);
+        draw(width * .78, height * .61, 26, spacing, 1.35, 3.3);
+    }).observe(canvas);
+    return canvas;
+}
+
 function sidebar(data, state) {
     const active = data.selection;
     const running = sessionRunning(data);
     return node("aside", {class: "session-sidebar", "aria-label": "Session history", "data-expanded": String(state.sessions)},
         node("div", {class: "sidebar-bar"}, node("h2", {}, "Research sessions"),
-            button("Sessions", "sessions", null, {class: "secondary mobile-sessions",
-                "aria-controls": "session-menu", "aria-expanded": String(state.sessions)})),
+            button(state.sessions ? "Hide sessions" : "Show sessions", "sessions", null, {
+                class: "secondary mobile-sessions", "aria-controls": "session-menu",
+                "aria-expanded": String(state.sessions)})),
         node("div", {class: "sidebar-menu", id: "session-menu"},
             button("", "new", null, {class: "secondary new-session", "aria-label": "New session"},
                 node("span", {"aria-hidden": "true"}, "+"), "New session"),
@@ -141,8 +183,7 @@ function sidebar(data, state) {
                                 "aria-haspopup": "dialog", disabled: running || Boolean(state.pending),
                                 title: running ? "Wait for the active investigation to finish" : "Delete session"}));
                 })),
-            node("section", {"aria-labelledby": "session-questions"},
-                node("h3", {class: "eyebrow sidebar-title", id: "session-questions"}, "Session questions"),
+            disclosure(state, questionsDisclosure, node("span", {class: "eyebrow"}, "Session questions"), [
                 data.turns.length === 0 && node("p", {class: "session-empty"}, "Investigations appear here."),
                 node("nav", {class: "session-turns", "aria-label": "Session questions"},
                     [...data.turns].reverse().map(item => button(item.question, "turn", item.id,
@@ -150,7 +191,8 @@ function sidebar(data, state) {
                         node("span", {}, item.status + (item.mode === "replay" ? " · Replay" : ""),
                             item.created_at && node("time", {datetime: item.created_at,
                                 title: cutoffTime.format(new Date(item.created_at))},
-                                shortTime.format(new Date(item.created_at)))))))),
+                                shortTime.format(new Date(item.created_at)))))))
+            ], "disclosure session-questions"),
             node("p", {class: "storage-note"}, "Saved on this computer")));
 }
 
@@ -542,7 +584,7 @@ function stagePanel(turn, state, stage, event, running) {
         node("div", {class: "stage-progress"},
             node("span", {class: "stage-pulse", "aria-hidden": "true"}),
             node("span", {}, "Stage in progress"),
-            node("span", {class: "stage-clock", role: "timer", "data-started-at": event.timestamp})),
+            node("span", {class: "stage-clock", role: "timer", "data-live-stage-clock": "pass"})),
     ];
     if (event?.outcome === "started") {
         return heading("Investigation workflow", stage,
@@ -618,6 +660,30 @@ function finishedStages(events, status) {
     return finished;
 }
 
+function stageDurations(events) {
+    const starts = new Map();
+    const totals = new Map();
+    for (const event of events) {
+        if (event.kind !== "stage") continue;
+        const key = event.stage + "-" + event.pass_no;
+        if (event.outcome === "started") {
+            starts.set(key, Date.parse(event.timestamp));
+        } else if (event.outcome === "complete" || event.outcome === "error") {
+            const saved = event.data?.elapsed_ms;
+            const elapsed = Number.isFinite(saved) ? saved : Date.parse(event.timestamp) - starts.get(key);
+            starts.delete(key);
+            if (Number.isFinite(elapsed) && elapsed >= 0) {
+                totals.set(event.stage, (totals.get(event.stage) || 0) + elapsed);
+            }
+        }
+    }
+    return totals;
+}
+
+function stageTime(milliseconds) {
+    return (milliseconds / 1000).toFixed(2) + " s";
+}
+
 function render(root, data, state) {
     clearInterval(state.stageClock);
     const focused = root.getRootNode().activeElement;
@@ -630,11 +696,14 @@ function render(root, data, state) {
     const event = selectedEvent || events.findLast(item => item.stage === stage && item.kind === "stage");
     const status = turn?.status || "Ready";
     const finished = finishedStages(events, status);
-    const running = status === "Running" && newest?.outcome === "started" && event === newest;
+    const durations = stageDurations(events);
+    const active = status === "Running" && newest?.outcome === "started" ? newest : null;
+    const running = active !== null && event === active;
     const report = turn?.report && stage === "Report" && (!event || event.kind === "stage");
     const view = report ? reportView(turn) : null;
     const dialog = deleteDialog(data, state);
-    root.replaceChildren(header(data, state), node("main", {class: "shell workspace"},
+    state.marketTexture ??= marketTexture();
+    root.replaceChildren(state.marketTexture, header(data, state), node("main", {class: "shell workspace"},
         sidebar(data, state),
         node("div", {class: "workflow-main"},
             node("section", {class: "workflow", "aria-labelledby": "workflow-heading"},
@@ -642,12 +711,20 @@ function render(root, data, state) {
                     node("h2", {id: "workflow-heading"}, "Investigation workflow"),
                     node("div", {role: "status"}, badge(status))),
                 node("nav", {class: "steps", "aria-label": "Investigation steps"},
-                    stages.map((item, index) => button("", "stage", item,
-                        {class: "step " + (newest?.stage === item ? "current" : finished.has(item) ? "done" : "pending"),
-                        "aria-pressed": String(stage === item), "aria-label": item,
-                        "aria-description": finished.has(item) ? "Finished" : null},
-                        node("span", {class: "step-number", "aria-hidden": "true"}, finished.has(item) ? "✓" : String(index + 1)),
-                        node("span", {}, item))))),
+                    stages.map((item, index) => {
+                        const live = active?.stage === item;
+                        const elapsed = durations.get(item);
+                        const description = [live ? "Running" : finished.has(item) ? "Finished" : null,
+                            !live && elapsed !== undefined && stageTime(elapsed) + " elapsed"].filter(Boolean).join(". ");
+                        return button("", "stage", item,
+                            {class: "step " + (newest?.stage === item ? "current" : finished.has(item) ? "done" : "pending"),
+                            "aria-pressed": String(stage === item), "aria-label": item,
+                            "aria-description": description || null},
+                            node("span", {class: "step-number", "aria-hidden": "true"}, finished.has(item) ? "✓" : String(index + 1)),
+                            node("span", {class: "step-label"}, item,
+                                (live || elapsed !== undefined) && node("span", {class: "step-time", "aria-hidden": "true",
+                                    "data-live-stage-clock": live ? "total" : null}, stageTime(elapsed || 0))));
+                    }))),
             node("div", {class: "layout"},
                 node("section", {class: "panel panel-main", "aria-labelledby": "stage-title", tabindex: -1},
                     view ? reportPanel(turn, view) : stagePanel(turn, state, stage, event, running)),
@@ -657,17 +734,21 @@ function render(root, data, state) {
         root.append(dialog);
         dialog.showModal();
     }
-    const clock = root.querySelector(".stage-clock");
-    if (clock) {
-        const started = Date.parse(clock.dataset.startedAt);
+    const clocks = [...root.querySelectorAll("[data-live-stage-clock]")];
+    if (active && clocks.length) {
+        const started = Date.parse(active.timestamp);
+        const previous = durations.get(active.stage) || 0;
         const tick = () => {
-            if (!clock.isConnected) {
+            if (!clocks[0].isConnected) {
                 clearInterval(state.stageClock);
                 return;
             }
-            const seconds = Math.max(0, Math.floor((Date.now() - started) / 1000));
-            const elapsed = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} elapsed`;
-            if (clock.textContent !== elapsed) clock.textContent = elapsed;
+            const elapsed = Number.isFinite(started) ? Math.max(0, Date.now() - started) : 0;
+            for (const clock of clocks) {
+                const total = clock.dataset.liveStageClock === "total";
+                const text = stageTime(elapsed + (total ? previous : 0)) + (total ? "" : " elapsed");
+                if (clock.textContent !== text) clock.textContent = text;
+            }
         };
         tick();
         state.stageClock = setInterval(tick, 250);
@@ -699,7 +780,7 @@ export default function workspace({parentElement, data, setTriggerValue}) {
             state.turn = data.selected?.id;
             state.stage = null;
             state.event = null;
-            state.open = new Set(defaultOpenDisclosures);
+            state.open = new Set(defaultOpenDisclosures.filter(id => id !== questionsDisclosure || state.open.has(id)));
             state.citation = null;
             state.verifyTarget = null;
             state.answers = {};

@@ -25,11 +25,22 @@ def main():
         page = browser.new_page(viewport={"width": 1440, "height": 960})
         page.goto(os.environ.get("RESEARCH_TEST_URL", "http://127.0.0.1:8501/"))
         select_fixture_replay(page)
+        backdrop = page.locator(".research-app .market-texture")
+        expect(backdrop).to_have_attribute("aria-hidden", "true")
+        form = page.locator("#research-form")
+        assert form.evaluate("el => parseFloat(getComputedStyle(el).borderTopLeftRadius)") >= 24
+        assert (
+            form.get_by_role("button", name="Run investigation").bounding_box()["x"]
+            > (form.get_by_role("textbox", name="Research question").bounding_box()["x"])
+        )
         page.get_by_role("button", name="New session").click()
         expect(page.get_by_role("heading", name="Start an investigation")).to_be_visible()
         page.get_by_role("button", name="Source conflict", exact=True).click()
         page.get_by_role("button", name="Run investigation").click()
         expect(page.get_by_role("heading", name="Conclusion", exact=True)).to_be_visible(timeout=10000)
+        assert page.locator(".panel-main").evaluate(
+            "el => getComputedStyle(el).backdropFilter.includes('blur')"
+        )
         expect(page.locator(".report-answer").first).to_contain_text("The two figures don’t conflict.")
         expect(page.locator(".panel-topline .status")).to_have_text("Contradicted")
         expect(page.locator(".result-claim .status")).to_have_text("Contradicted")
@@ -39,6 +50,11 @@ def main():
         sidebar = page.get_by_role("heading", name="Research sessions").bounding_box()
         workflow = page.get_by_role("heading", name="Investigation workflow").bounding_box()
         assert abs(sidebar["y"] - workflow["y"]) <= 6
+        for selector in (".session-sidebar", ".workflow"):
+            assert page.locator(selector).evaluate(
+                "el => getComputedStyle(el).backdropFilter.includes('blur')"
+            )
+        expect(page.locator(".workflow .section-heading .status")).to_have_text("Complete")
 
         support = page.get_by_role("region", name="Supporting details")
         run = page.get_by_role("complementary", name="Run details")
@@ -59,6 +75,10 @@ def main():
         expect(sources).to_have_attribute("open", "")
         expect(page.locator(".conclusion-divider")).to_be_visible()
         expect(page.locator(".step .step-number")).to_have_text(["✓"] * 5)
+        step_times = page.locator(".step .step-time")
+        expect(step_times).to_have_count(5)
+        saved_times = step_times.all_text_contents()
+        assert all(value.endswith(" s") for value in saved_times)
         right, below = run.bounding_box(), support.bounding_box()
         assert abs(right["x"] - below["x"]) <= 1
         assert below["y"] > right["y"] + right["height"]
@@ -110,16 +130,21 @@ def main():
         page.reload()
         expect(page.get_by_role("heading", name="Conclusion", exact=True)).to_be_visible(timeout=10000)
         expect(page.locator(".side-facts")).to_have_text(activity)
+        expect(step_times).to_have_text(saved_times)
         page.set_viewport_size({"width": 390, "height": 844})
         report_card = page.locator(".panel-main").bounding_box()
         assert support.bounding_box()["y"] > report_card["y"] + report_card["height"]
-        sessions = page.get_by_role("button", name="Sessions", exact=True)
-        expect(sessions).to_be_visible()
-        expect(sessions).to_have_attribute("aria-expanded", "false")
-        sessions.click()
+        sidebar_heading = page.get_by_role("heading", name="Research sessions")
+        expect(sidebar_heading).to_be_visible()
+        show_sessions = page.get_by_role("button", name="Show sessions", exact=True)
+        expect(show_sessions).to_have_attribute("aria-expanded", "false")
+        show_sessions.press("Enter")
         expect(page.get_by_role("button", name="New session")).to_be_visible()
-        sessions.click()
+        hide_sessions = page.get_by_role("button", name="Hide sessions", exact=True)
+        expect(hide_sessions).to_have_attribute("aria-expanded", "true")
+        hide_sessions.press("Enter")
         expect(page.get_by_role("button", name="New session")).to_be_hidden()
+        expect(sidebar_heading).to_be_visible()
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
         page.set_viewport_size({"width": 1440, "height": 960})
         select_fixture_replay(page)
@@ -138,6 +163,11 @@ def main():
         questions = page.get_by_role("navigation", name="Session questions")
         expect(questions.get_by_role("button").first).to_contain_text("What about operating income?")
         expect(questions.locator("time")).to_have_count(2)
+        question_section = page.locator("details#session-questions")
+        question_toggle = question_section.locator(":scope > summary")
+        expect(question_section).to_have_attribute("open", "")
+        question_toggle.press("Enter")
+        expect(questions).to_be_hidden()
 
         page.get_by_role("textbox", name="Research question").fill("Did Microsoft profit increase in FY2024?")
         page.get_by_role("button", name="Run investigation").click()
@@ -147,10 +177,13 @@ def main():
         page.get_by_role("combobox", name="Profit metric", exact=True).select_option("operating_income")
         page.get_by_role("button", name="Resume investigation").click()
         expect(page.get_by_role("heading", name="Conclusion", exact=True)).to_be_visible(timeout=10000)
+        expect(question_section).not_to_have_attribute("open", "")
+        question_toggle.press("Enter")
+        expect(questions.get_by_role("button").first).to_contain_text("Did Microsoft profit increase")
 
         page.set_viewport_size({"width": 390, "height": 844})
-        if sessions.get_attribute("aria-expanded") == "false":
-            sessions.click()
+        if show_sessions.is_visible():
+            show_sessions.click()
         session_list = page.get_by_role("navigation", name="Research sessions")
         selected_session = session_list.locator("button[aria-current=true]")
         title = selected_session.inner_text()
@@ -181,7 +214,7 @@ def main():
         confirmation.get_by_role("button", name="Delete permanently").click()
         expect(session_list.get_by_role("button", name=title, exact=True)).to_have_count(0)
         page.reload()
-        sessions.click()
+        show_sessions.click()
         expect(session_list.get_by_role("button", name=title, exact=True)).to_have_count(0)
 
         select_fixture_replay(page)
