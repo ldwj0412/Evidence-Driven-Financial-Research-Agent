@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from .domain import METRICS
+from .domain import COMPANIES, METRICS
 from .fixtures import PROMPTS
 from .verification import render_number
 
@@ -12,7 +12,20 @@ def workspace_view(turn):
     if not turn:
         return None
     result = dict(turn)
+    result["company_names"] = {ticker: name for ticker, (name, _) in COMPANIES.items()}
     evidence = result.get("evidence", [])
+    result["events"] = [
+        {
+            **event,
+            "data": {
+                **event["data"],
+                "findings": [display_finding(item) for item in event["data"]["findings"]],
+            },
+        }
+        if event["stage"] == "Verify" and event["kind"] == "stage" and "findings" in event["data"]
+        else event
+        for event in result.get("events", [])
+    ]
     report = result.get("report")
     if report:
         report = {**report, "findings": [display_finding(item) for item in report["findings"]]}

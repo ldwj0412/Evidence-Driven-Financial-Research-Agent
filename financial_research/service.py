@@ -17,6 +17,7 @@ from .config import load_config
 from .domain import (
     Attribution,
     Attributions,
+    ConclusionDraft,
     DisclosureSynthesis,
     Document,
     EvidenceRecord,
@@ -30,6 +31,7 @@ from .domain import (
 from .fixtures import fixture_attributions, lookup_fixture, parse_fixture
 from .planning import (
     ATTRIBUTION_PROMPT,
+    CONCLUSION_PROMPT,
     DISCLOSURE_SYNTHESIS_PROMPT,
     FINANCIAL_SUBJECT_PROMPT,
     PARSE_PROMPT,
@@ -50,7 +52,7 @@ from .providers import (
     ProviderError,
     Transport,
 )
-from .reporting import report_content
+from .reporting import report_content, validated_conclusion
 from .sec import EASTERN, date_end
 from .storage import Store, json_text, utc_now
 from .verification import (
@@ -70,6 +72,7 @@ from .verification import (
 log = logging.getLogger(__name__)
 EVIDENCE = TypeAdapter(list[EvidenceRecord])
 ROOT = Path(__file__).resolve().parent.parent
+CONCLUSION_TIMEOUT_SECONDS = 12.0
 
 
 class State(TypedDict, total=False):
@@ -696,6 +699,8 @@ class Investigation:
     async def report(self, state):
         self.begin("Report")
         snapshot = self.report_snapshot(state)
+        if self.mode == "live" and snapshot["answers"] and self.budget.remaining > 1.2:
+            await self.draft_conclusion(state["question"], snapshot)
         self.complete(
             {
                 "overall": snapshot["overall"],
@@ -704,6 +709,41 @@ class Investigation:
             }
         )
         return {"snapshot": snapshot}
+
+    async def draft_conclusion(self, question, snapshot):
+        answers = snapshot["answers"]
+        try:
+            async with asyncio.timeout(min(CONCLUSION_TIMEOUT_SECONDS, self.budget.remaining - 0.2)):
+                draft = await self.router.ask(
+                    ConclusionDraft,
+                    "conclusion drafting",
+                    CONCLUSION_PROMPT,
+                    {
+                        "question": question,
+                        "answers": [
+                            {"index": index, "verdict": item["verdict"], "text": item["text"]}
+                            for index, item in enumerate(answers)
+                        ],
+                    },
+                )
+        except (ProviderError, TimeoutError):
+            self.emit(
+                "conclusion",
+                "fallback",
+                {"message": "Used the verified answer because drafting was unavailable."},
+            )
+            return
+        rewritten = validated_conclusion(draft, answers)
+        if rewritten is None:
+            self.emit(
+                "conclusion",
+                "fallback",
+                {"message": "Used the verified answer because the draft changed protected details."},
+            )
+            return
+        snapshot["answers"] = rewritten
+        snapshot["conclusion"] = " ".join(item["text"] for item in rewritten)
+        self.emit("conclusion", "generated", {"answer_count": len(rewritten)})
 
     def context_snapshot(self, state):
         parsed = Parsed.model_validate(state["parsed"])

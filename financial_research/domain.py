@@ -274,6 +274,13 @@ class Calculation(Record):
     evidence_ids: list[str]
 
 
+class VerificationCheck(Record):
+    label: str
+    detail: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    excerpt: str | None = None
+
+
 class Finding(Record):
     claim_id: str
     label: str
@@ -281,6 +288,17 @@ class Finding(Record):
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
     calculations: list[Calculation] = Field(default_factory=list)
+    checks: list[VerificationCheck] = Field(default_factory=list)
+
+
+class ConclusionAnswer(Record):
+    index: int = Field(ge=0, le=7)
+    verdict: Verdict
+    text: str = Field(min_length=1, max_length=1200)
+
+
+class ConclusionDraft(Record):
+    answers: list[ConclusionAnswer] = Field(min_length=1, max_length=8)
 
 
 class Gap(Record):

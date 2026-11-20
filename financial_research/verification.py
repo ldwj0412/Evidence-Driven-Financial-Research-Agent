@@ -3,6 +3,7 @@ import re
 from decimal import ROUND_HALF_UP, Decimal, localcontext
 
 from .domain import (
+    COMPANIES,
     METRICS,
     Attribution,
     Calculation,
@@ -15,6 +16,7 @@ from .domain import (
     Gap,
     Operand,
     Period,
+    VerificationCheck,
 )
 from .sec import TAGS
 
@@ -215,14 +217,14 @@ def numeric_verdict(claim, results):
     if len(claim.entities) == 2 and target is None and claim.assertion != "describe":
         first = next(item for item in reversed(results) if item.label.startswith(claim.entities[0] + " "))
         if first.unit != result.unit:
-            return "Unresolved", "The two company results use different units."
+            return "Unresolved", "The two company results use different units.", None
         value, target = first.result, result.result
     elif len(claim.entities) == 2 and target is not None:
-        return "Unresolved", "Specify the company for the numeric target."
+        return "Unresolved", "Specify the company for the numeric target.", None
     elif target is not None and result.unit != claim.target_unit:
-        return "Unresolved", "The requested and calculated units differ."
+        return "Unresolved", "The requested and calculated units differ.", None
     if claim.assertion == "equal" and target is None:
-        return "Unresolved", "An equality assertion needs a comparison value."
+        return "Unresolved", "An equality assertion needs a comparison value.", None
     if claim.assertion == "equal" and claim.target is not None:
         value = value.quantize(Decimal(1).scaleb(-claim.target_precision), rounding=ROUND_HALF_UP)
     target = target if target is not None else Decimal(0)
@@ -237,7 +239,19 @@ def numeric_verdict(claim, results):
     values = [f"{item.label}: {render_number(item.result, item.unit)}" for item in results]
     detail = " · ".join(values)
     message = detail + "." if supported else f"The calculated figures contradict the assertion. {detail}."
-    return ("Supported" if supported else "Contradicted"), message
+    if claim.assertion == "describe":
+        rule = "The request asks for the verified result without a comparison target."
+    else:
+        operator = {"positive": ">", "negative": "<", "equal": "=", "greater": ">", "less": "<"}[
+            claim.assertion
+        ]
+        precision = (
+            f"The result was rounded to {claim.target_precision} decimal places to match the stated precision. "
+            if claim.assertion == "equal" and claim.target is not None
+            else ""
+        )
+        rule = f"{precision}{value:f} {operator} {target:f} ({result.unit}) → {'true' if supported else 'false'}."
+    return ("Supported" if supported else "Contradicted"), message, rule
 
 
 _METRIC_WORDS = {
@@ -341,13 +355,16 @@ def measure_disclosures(claim, figure, evidence):
                 if re.search(r"(?:down|decreased|declined|fell)\s*(?:by\s*)?$", left, re.IGNORECASE):
                     value = -abs(value)
                 if _quoted_value_matches(figure, value):
-                    records[basis] = document.id
+                    index = metric.end() + match.start()
+                    start, end = max(0, index - 160), min(len(text), index + 200)
+                    excerpt = ("…" if start else "") + text[start:end] + ("…" if end < len(text) else "")
+                    records[basis] = (document.id, excerpt)
     return records
 
 
 def verify_conflict(claim, evidence):
     first, second = conflict_figures(claim)
-    matches, display, calculations = [], [], {}
+    matches, display, calculations, checks = [], [], {}, []
     for figure in (first, second):
         observed = measure_disclosures(claim, figure, evidence)
         if figure.scope == "consolidated":
@@ -369,31 +386,94 @@ def verify_conflict(claim, evidence):
                     not figure.basis or (_basis(figure.basis) or figure.basis) in {"reported", "as reported"}
                 )
             ):
-                observed.setdefault("as reported", computed[-1].evidence_ids[-1])
+                observed.setdefault("as reported", (computed[-1].evidence_ids[-1], None))
         matches.append(observed)
         suffix = (
             "%" if figure.unit == "%" else (" " + (figure.scale if figure.scale != "one" else figure.unit))
         )
         display.append(f"{figure.value}{suffix}")
+        fiscal_period = figure.period or claim.period
+        context = ", ".join(
+            filter(None, [fiscal_period and fiscal_period.label, figure.scope, METRICS[claim.metric]])
+        )
+        if len(observed) == 1:
+            basis, (evidence_id, excerpt) = next(iter(observed.items()))
+            detail = (
+                f"Matched the filing disclosure ({basis})."
+                if excerpt
+                else f"The filing calculation rounds to this amount ({basis})."
+            )
+            checks.append(
+                VerificationCheck(
+                    label=f"Match {display[-1]}",
+                    detail=f"{detail} {context}.",
+                    evidence_ids=[evidence_id],
+                    excerpt=excerpt,
+                )
+            )
+        else:
+            detail = (
+                "Several measurement bases matched."
+                if observed
+                else "No eligible evidence matched this figure."
+            )
+            checks.append(VerificationCheck(label=f"Match {display[-1]}", detail=f"{detail} {context}."))
     a, b = matches
     calculations = list(calculations.values())
     calc_refs = list(dict.fromkeys(ref for item in calculations for ref in item.evidence_ids))
+
+    def decision(label, detail, verdict, reason, refs, gap=None):
+        checks.append(VerificationCheck(label=label, detail=detail))
+        return verdict, reason, calculations, refs, gap, checks
+
     if len(a) == len(b) == 1:
         basis_a, basis_b = next(iter(a)), next(iter(b))
-        evidence_ids = list(dict.fromkeys([a[basis_a], b[basis_b], *calc_refs]))
+        first_ref, second_ref = a[basis_a][0], b[basis_b][0]
+        evidence_ids = list(dict.fromkeys([first_ref, second_ref, *calc_refs]))
+        period_a, period_b = first.period or claim.period, second.period or claim.period
         if basis_a != basis_b:
             reason = f"{display[0]} {basis_a} and {display[1]} {basis_b} use different measurement bases."
-            return "Contradicted", reason, calculations, evidence_ids, None
-        period_a, period_b = first.period or claim.period, second.period or claim.period
+            if (
+                {basis_a, basis_b} == {"as reported", "in constant currency"}
+                and period_a == period_b
+                and first.scope == second.scope == "consolidated"
+                and first.measure == second.measure == "growth"
+                and first.unit == second.unit == "%"
+            ):
+                values = dict(zip((basis_a, basis_b), display, strict=True))
+                company = COMPANIES[claim.entities[0]][0]
+                subject = f"{company}’s {period_a.label} {METRICS[claim.metric].lower()} growth"
+                reason = f"{subject} was {values['as reported']} as reported and {values['in constant currency']} in constant currency."
+            if "in constant currency" in (basis_a, basis_b):
+                reason += " Constant currency adjusts for exchange-rate changes."
+            return decision(
+                "Compare measurement bases",
+                "A conflict requires the same measurement basis.",
+                "Contradicted",
+                reason,
+                evidence_ids,
+            )
         if period_a != period_b:
             reason = f"{display[0]} covers {period_a.label}. {display[1]} covers {period_b.label}."
-            return "Contradicted", reason, calculations, evidence_ids, None
+            return decision(
+                "Compare fiscal periods",
+                "A conflict requires the same fiscal period.",
+                "Contradicted",
+                reason,
+                evidence_ids,
+            )
         if first.scope != second.scope or first.measure != second.measure or first.unit != second.unit:
             reason = (
                 f"{display[0]} ({first.scope} {first.measure}) and {display[1]} "
                 f"({second.scope} {second.measure}) use different measurement definitions."
             )
-            return "Contradicted", reason, calculations, evidence_ids, None
+            return decision(
+                "Compare measurement definitions",
+                "A conflict requires matching scope, measure, and units.",
+                "Contradicted",
+                reason,
+                evidence_ids,
+            )
         if any(
             item.unit == first.unit
             and _quoted_value_matches(first, item.result)
@@ -401,20 +481,33 @@ def verify_conflict(claim, evidence):
             for item in calculations
         ):
             reason = f"{display[0]} and {display[1]} are display forms of the same verified measurement."
-            return "Contradicted", reason, calculations, evidence_ids, None
+            return decision(
+                "Check rounding",
+                "The same underlying value matches both reported precisions.",
+                "Contradicted",
+                reason,
+                evidence_ids,
+            )
         if (
-            a[basis_a] != b[basis_b]
+            first_ref != second_ref
             and first.value * _SCALE[first.scale] != second.value * _SCALE[second.scale]
         ):
             reason = (
                 f"The sources give {display[0]} and {display[1]} {basis_a} for the same reporting period."
             )
-            return "Supported", reason, calculations, evidence_ids, None
+            return decision(
+                "Compare like-for-like figures",
+                "Distinct sources give unequal values for the same measurement.",
+                "Supported",
+                reason,
+                evidence_ids,
+            )
     reason = "The measurement basis, period, or scope of one of the figures is still missing."
-    return (
+    return decision(
+        "Check comparability",
+        "A conflict verdict requires two unambiguous, sourced measurements.",
         "Unresolved",
         reason,
-        calculations,
         calc_refs,
         Gap(claim_id=claim.id, operation="release", reason=reason),
     )
@@ -693,6 +786,7 @@ def verify(
     attributions = valid_attributions(claims, evidence, attributions or [])
     for claim in claims:
         calculations, references, gap = [], [], None
+        checks = []
         if claim.kind in {"financial", "macro"}:
             calculations, problem = (
                 financial_calculations(claim, evidence)
@@ -701,49 +795,84 @@ def verify(
             )
             if problem:
                 verdict, reason = "Unresolved", problem
+                checks.append(VerificationCheck(label="Check required evidence", detail=problem))
                 operation = "observations" if claim.kind == "macro" else "filing"
                 if claim.kind == "financial" and claim.period and claim.period.quarter == 4:
                     operation = "release"
                 if problem.startswith(("Missing", "No eligible", "The margin needs")):
                     gap = Gap(claim_id=claim.id, operation=operation, reason=problem)
             else:
-                verdict, reason = numeric_verdict(claim, calculations)
+                verdict, reason, rule = numeric_verdict(claim, calculations)
+                checks.append(VerificationCheck(label="Apply the numeric rule", detail=rule or reason))
             references = list(dict.fromkeys(ref for item in calculations for ref in item.evidence_ids))
         elif claim.kind == "conflict":
-            verdict, reason, calculations, references, gap = verify_conflict(claim, evidence)
+            verdict, reason, calculations, references, gap, checks = verify_conflict(claim, evidence)
         else:
             related = [item for item in attributions if item.claim_id == claim.id]
             references = list(dict.fromkeys(item.evidence_id for item in related))
             relevant_documents = {item.id: item for item in evidence if isinstance(item, Document)}
-            if claim.kind == "event" and any(
+            event_match = next(
                 (
-                    item.role == "event"
+                    item
+                    for item in related
+                    if claim.kind == "event"
                     and (
-                        not claim.event_date
-                        or relevant_documents[item.evidence_id].published == claim.event_date
-                        or claim.event_date.isoformat() in item.quote
+                        (
+                            item.role == "event"
+                            and (
+                                not claim.event_date
+                                or relevant_documents[item.evidence_id].published == claim.event_date
+                                or claim.event_date.isoformat() in item.quote
+                            )
+                        )
+                        or (
+                            asks_for_explanation(claim.event)
+                            and company_disclosed_cause(claim, relevant_documents[item.evidence_id], item)
+                        )
+                    )
+                ),
+                None,
+            )
+            if event_match:
+                verdict, reason = "Supported", "Dated source evidence documents the event."
+                checks.append(
+                    VerificationCheck(
+                        label="Match a dated source passage",
+                        detail=(
+                            "The company filing explicitly attributes the observed change."
+                            if event_match.role == "explanation"
+                            else "The passage matched the requested event and date."
+                        ),
+                        evidence_ids=[event_match.evidence_id],
+                        excerpt=event_match.quote,
                     )
                 )
-                or (
-                    asks_for_explanation(claim.event)
-                    and company_disclosed_cause(claim, relevant_documents[item.evidence_id], item)
-                )
-                for item in related
-            ):
-                verdict, reason = "Supported", "Dated source evidence documents the event."
             else:
                 # An attributed explanation is valuable context. Causality requires an identified study.
-                causal = any(
-                    item.role == "causal_evidence"
-                    and relevant_documents[item.evidence_id].independent
-                    and re.search(
-                        r"causal|counterfactual|randomized|natural experiment", item.quote, re.IGNORECASE
-                    )
-                    and not re.search(r"\b(?:no|not|cannot|correlat\w*)\b", item.quote, re.IGNORECASE)
-                    for item in related
+                causal = next(
+                    (
+                        item
+                        for item in related
+                        if claim.kind == "causal"
+                        and item.role == "causal_evidence"
+                        and relevant_documents[item.evidence_id].independent
+                        and re.search(
+                            r"causal|counterfactual|randomized|natural experiment", item.quote, re.IGNORECASE
+                        )
+                        and not re.search(r"\b(?:no|not|cannot|correlat\w*)\b", item.quote, re.IGNORECASE)
+                    ),
+                    None,
                 )
                 if claim.kind == "causal" and causal:
                     verdict, reason = "Supported", "Independent evidence identifies the stated relationship."
+                    checks.append(
+                        VerificationCheck(
+                            label="Check for independent causal evidence",
+                            detail="The source was marked independent and the passage matched explicit causal evidence.",
+                            evidence_ids=[causal.evidence_id],
+                            excerpt=causal.quote,
+                        )
+                    )
                 else:
                     verdict, reason = (
                         "Unresolved",
@@ -755,6 +884,14 @@ def verify(
                     )
                     if claim.kind == "event":
                         gap = Gap(claim_id=claim.id, operation="articles", reason=reason)
+                        checks.append(VerificationCheck(label="Match a dated source passage", detail=reason))
+                    else:
+                        checks.append(
+                            VerificationCheck(
+                                label="Check for independent causal evidence",
+                                detail="No independent passage passed the causal-evidence check. Observed timing alone cannot establish cause.",
+                            )
+                        )
             if claim.kind == "causal":
                 references.extend(item.id for item in evidence if item.source == "fred")
         if verdict != "Unresolved" and not references:
@@ -767,6 +904,7 @@ def verify(
                 reason=reason,
                 evidence_ids=references,
                 calculations=calculations,
+                checks=checks,
             )
         )
         if gap:

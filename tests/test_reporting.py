@@ -73,7 +73,10 @@ def test_comparison_answers_directly_and_deduplicates_repeated_measurements():
     [
         (258_000_000_000, "No. Microsoft’s FY2024 revenue was $12.88B lower than NVIDIA’s."),
         (245_122_000_000, "No. Microsoft and NVIDIA reported equal FY2024 revenue."),
-        (None, "Missing comparable revenue for NVDA FY2024."),
+        (
+            None,
+            "The available evidence couldn’t verify the requested figure. Missing comparable revenue for NVIDIA FY2024.",
+        ),
     ],
 )
 def test_comparison_states_the_observed_relationship(right_value, answer):
@@ -93,6 +96,10 @@ def test_distinct_metrics_remain_visible_when_their_display_values_match():
         claim("revenue", entities=["MSFT"], assertion="describe"),
     ]
     result = report(claims, [income, revenue])
+    assert [item["text"] for item in result["answers"]] == [
+        "Microsoft’s FY2024 operating income was $1.00B.",
+        "Microsoft’s FY2024 revenue was $1.00B.",
+    ]
     assert [item["calculation"]["evidence_ids"] for item in result["highlights"]] == [
         [income.id],
         [revenue.id],
@@ -107,6 +114,50 @@ def test_reverse_order_change_labels_the_calculated_period():
     (highlight,) = result["highlights"]
     assert highlight["period"] == "FY2024"
     assert highlight["period_end"] == "2024-06-30"
+    assert "decreased by $25.00" in result["answers"][0]["text"]
+
+
+def test_macro_conclusion_names_the_series_and_verified_month():
+    observation = Fact(
+        id="rates",
+        source="fred",
+        title="Federal Funds Effective Rate",
+        url="https://fred.stlouisfed.org/series/FEDFUNDS",
+        metric="FEDFUNDS",
+        start=date(2024, 7, 1),
+        end=date(2024, 7, 1),
+        value=Decimal("5.33"),
+        unit="%",
+        vintage=date(2024, 8, 1),
+        retrieved_at=datetime(2024, 8, 1, tzinfo=UTC),
+    )
+    request = Claim(
+        id="macro",
+        label="Federal funds rate",
+        kind="macro",
+        entities=[],
+        series="FEDFUNDS",
+        measure="value",
+        assertion="describe",
+        window_end=date(2024, 7, 31),
+    )
+    result = report([request], [observation], question="What was the federal funds rate in July 2024?")
+    assert result["answers"][0]["text"] == "The federal funds rate was 5.33% in July 2024."
+    assert result["answers"][0]["evidence_ids"] == [observation.id]
+
+
+def test_causal_question_leads_with_uncertainty_before_the_verified_growth():
+    growth = claim("growth", entities=["MSFT"], measure="growth", assertion="positive")
+    cause = claim("cause", entities=["MSFT"], kind="causal", event="Rates drove revenue growth")
+    result = report(
+        [growth, cause],
+        [fact("MSFT", 100_000_000, year=2023), fact("MSFT", 120_000_000)],
+        question="Did interest rates explain Microsoft’s FY2024 revenue growth?",
+    )
+    assert [item["text"] for item in result["answers"]] == [
+        "The available evidence leaves the cause unresolved.",
+        "Microsoft’s FY2024 revenue increased by 20.00% compared with FY2023.",
+    ]
 
 
 def test_targeted_filing_excerpt_ranking_keeps_observed_drivers():
@@ -302,8 +353,8 @@ def test_disclosure_summary_recovers_qualifiers_from_the_matching_filing_paragra
         result = report_content(
             Parsed(claims=[driver]), findings, [document], entries, "What drove the increase?", summaries
         )
-        point = result["disclosure_summary"][0]
-        assert (point["text"], point.get("details", [])) == (expected_text, expected_details)
+        (point,) = result["answers"]
+        assert point["text"] == " ".join([expected_text, *expected_details])
         assert point["evidence_ids"] == [document.id]
         assert not result["show_disclosure_quotes"]
         assert {item["quote"] for item in result["explanations"]} >= {offset, fx}

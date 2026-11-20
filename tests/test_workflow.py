@@ -46,6 +46,25 @@ def test_reuse_restart_and_conflict_history(tmp_path):
         ("Report", 0),
     ]
     assert before_restart["report"]["overall"] == "Contradicted"
+    assert before_restart["report"]["conclusion"] == (
+        "The two figures don’t conflict. Microsoft’s FY2024 revenue growth was 16% as reported "
+        "and 15% in constant currency. Constant currency adjusts for exchange-rate changes."
+    )
+    first, second = [
+        event["data"]["findings"][0]
+        for event in before_restart["events"]
+        if event["stage"] == "Verify" and event["kind"] == "stage" and event["outcome"] == "complete"
+    ]
+    assert first["verdict"] == "Unresolved"
+    assert any(check["label"] == "Match 15%" and not check["evidence_ids"] for check in first["checks"])
+    assert any(
+        check["label"] == "Match 15%"
+        and "in constant currency" in check["detail"]
+        and "15% in constant currency" in check["excerpt"]
+        and check["evidence_ids"]
+        for check in second["checks"]
+    )
+    assert second["checks"][-1]["label"] == "Compare measurement bases"
     assert ResearchService(path).view(conflict) == before_restart
 
 
@@ -189,6 +208,11 @@ def _model_response(content):
     )
 
 
+def _draft_from_payload(payload):
+    context = json.loads(payload["messages"][-1]["content"])
+    return _model_response({"answers": context["answers"]})
+
+
 @pytest.mark.parametrize("company", ["MSFT", "AAPL"])
 def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company):
     from financial_research.fixtures import lookup_fixture
@@ -200,6 +224,8 @@ def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company)
         payload = json.loads(request.content)
         shape = payload["response_format"]["json_schema"]
         schemas.append(shape["name"])
+        if shape["name"] == "ConclusionDraft":
+            return _draft_from_payload(payload)
         if shape["name"] == "FinancialSubject":
             assert set(shape["schema"]["properties"]) == {"company", "metric", "period"}
             assert shape["strict"] is True
@@ -225,7 +251,7 @@ def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company)
     item = service.view(turn)
 
     if company == "MSFT":
-        assert schemas == ["FinancialSubject", "Plan"]
+        assert schemas == ["FinancialSubject", "Plan", "ConclusionDraft"]
         assert item["status"] == "Complete"
         assert item["counts"]["lookups"] == 1
         assert item["report"]["overall"] == "Supported"
@@ -238,16 +264,42 @@ def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company)
         assert item["counts"]["lookups"] == 0
 
 
-def test_live_source_conflict_hears_both_percentages_and_checks_the_release(tmp_path):
+@pytest.mark.parametrize("draft_change", ["valid", "different_value", "swapped_bases", "changed_verdict"])
+def test_live_source_conflict_hears_both_percentages_and_checks_the_release(tmp_path, draft_change):
     from financial_research.fixtures import lookup_fixture
 
     planned_sources = []
+    drafted_answer = (
+        "Microsoft’s FY2024 revenue growth figures are compatible. "
+        "The 16% figure is as reported and the 15% figure is in constant currency, which adjusts for exchange-rate changes."
+    )
 
     def handler(request):
         assert request.url.host == "openrouter.ai"
         payload = json.loads(request.content)
         schema = payload["response_format"]["json_schema"]
         context = json.loads(payload["messages"][-1]["content"])
+        if schema["name"] == "ConclusionDraft":
+            assert context["question"] == PROMPTS["conflict"]
+            assert context["answers"][0]["verdict"] == "Contradicted"
+            text = drafted_answer
+            if draft_change == "different_value":
+                text = text.replace("15%", "25%")
+            if draft_change == "swapped_bases":
+                text = text.replace(
+                    "16% figure is as reported", "16% figure is in constant currency"
+                ).replace("15% figure is in constant currency", "15% figure is as reported")
+            return _model_response(
+                {
+                    "answers": [
+                        {
+                            "index": 0,
+                            "verdict": "Supported" if draft_change == "changed_verdict" else "Contradicted",
+                            "text": text,
+                        }
+                    ]
+                }
+            )
         if schema["name"] == "FinancialSubject":
             assert set(schema["schema"]["properties"]) == {"company", "metric", "period"}
             return _model_response(
@@ -275,7 +327,17 @@ def test_live_source_conflict_hears_both_percentages_and_checks_the_release(tmp_
     assert item["status"] == "Complete"
     assert planned_sources == ["financials", "release"]
     assert item["report"]["overall"] == "Contradicted"
-    assert "16% as reported and 15% in constant currency" in item["report"]["conclusion"]
+    if draft_change == "valid":
+        assert item["report"]["conclusion"] == drafted_answer
+    else:
+        assert "16% as reported and 15% in constant currency" in item["report"]["conclusion"]
+    assert item["report"]["answers"][0]["evidence_ids"] == item["report"]["findings"][0]["evidence_ids"]
+    assert any(
+        event["kind"] == "conclusion"
+        and event["outcome"] == ("generated" if draft_change == "valid" else "fallback")
+        for event in item["events"]
+    )
+    assert ResearchService(service.store.path).view(turn) == item
 
 
 def test_explicit_standalone_quarterly_eps_uses_financial_subject_parse(tmp_path):
@@ -287,6 +349,8 @@ def test_explicit_standalone_quarterly_eps_uses_financial_subject_parse(tmp_path
         schema = payload["response_format"]["json_schema"]["name"]
         schemas.append(schema)
         context = json.loads(payload["messages"][-1]["content"])
+        if schema == "ConclusionDraft":
+            return _draft_from_payload(payload)
         if schema == "FinancialSubject":
             assert context["explicit_fields"] == expected
             return _model_response(expected)
@@ -319,7 +383,7 @@ def test_explicit_standalone_quarterly_eps_uses_financial_subject_parse(tmp_path
         cutoff=datetime(2025, 1, 1, 15, tzinfo=UTC),
     )
     asyncio.run(service.execute(turn))
-    assert schemas == ["FinancialSubject", "Plan", "Plan"]
+    assert schemas == ["FinancialSubject", "Plan", "Plan", "ConclusionDraft"]
     assert service.view(turn)["status"] == "Complete"
 
 
@@ -339,6 +403,8 @@ def test_live_clarification_ignores_an_unrequested_as_of_date(tmp_path):
         assert request.url.host == "openrouter.ai"
         payload = json.loads(request.content)
         context = json.loads(payload["messages"][-1]["content"])
+        if payload["response_format"]["json_schema"]["name"] == "ConclusionDraft":
+            return _draft_from_payload(payload)
         if payload["response_format"]["json_schema"]["name"] == "Parsed":
             return _model_response(resolved if context["clarification_answers"] else initial)
         return _model_response({"actions": context["allowed_candidates"]})
@@ -382,6 +448,8 @@ def test_live_parse_repairs_a_clarification_that_asks_for_filing_figures(tmp_pat
         payload = json.loads(request.content)
         context = json.loads(payload["messages"][-1]["content"])
         schema = payload["response_format"]["json_schema"]["name"]
+        if schema == "ConclusionDraft":
+            return _draft_from_payload(payload)
         if schema == "Parsed":
             return _model_response(replies.pop(0))
         if schema == "Attributions":
@@ -433,6 +501,8 @@ def test_live_disclosure_synthesis_covers_verified_drivers_and_survives_restart(
         context = json.loads(payload["messages"][-1]["content"])
         name = payload["response_format"]["json_schema"]["name"]
         schemas.append(name)
+        if name == "ConclusionDraft":
+            return _draft_from_payload(payload)
         if name == "Parsed":
             return _model_response(parsed)
         if name == "Plan":
@@ -503,6 +573,7 @@ def test_live_disclosure_synthesis_covers_verified_drivers_and_survives_restart(
         expected_quotes.append(missed_quote)
     if repair == "complete":
         expected_summaries.append(missed_summary)
+    expected_schemas.append("ConclusionDraft")
     assert schemas == expected_schemas
     assert [point["text"] for point in result["report"]["disclosure_summary"]] == expected_summaries
     assert all(
@@ -531,6 +602,8 @@ def test_live_clarification_keeps_answers_from_earlier_rounds_after_restart(tmp_
     def handler(request):
         payload = json.loads(request.content)
         context = json.loads(payload["messages"][-1]["content"])
+        if payload["response_format"]["json_schema"]["name"] == "ConclusionDraft":
+            return _draft_from_payload(payload)
         if payload["response_format"]["json_schema"]["name"] == "Parsed":
             answers = context["clarification_answers"]
             received.append(answers)
@@ -583,6 +656,8 @@ def test_unresolved_causation_does_not_turn_a_risk_disclosure_into_a_driver(tmp_
         payload = json.loads(request.content)
         schema = payload["response_format"]["json_schema"]["name"]
         context = json.loads(payload["messages"][-1]["content"])
+        if schema == "ConclusionDraft":
+            return _draft_from_payload(payload)
         if schema == "Parsed":
             return _model_response(parse_fixture(PROMPTS["rates"]).model_dump(mode="json"))
         if schema == "Plan":
@@ -703,6 +778,8 @@ def test_retry_and_provider_failure_preserve_confirmed_finding(tmp_path):
     def handler(request):
         if request.url.host == "openrouter.ai":
             payload = json.loads(request.content)
+            if payload["response_format"]["json_schema"]["name"] == "ConclusionDraft":
+                return _draft_from_payload(payload)
             if payload["response_format"]["json_schema"]["name"] == "Parsed":
                 return _model_response(parse_fixture(PROMPTS["rates"]).model_dump(mode="json"))
             data = json.loads(payload["messages"][-1]["content"])

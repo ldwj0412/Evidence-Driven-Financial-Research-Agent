@@ -165,7 +165,8 @@ class Store:
             return [
                 dict(row)
                 for row in conn.execute(
-                    "SELECT id, question, mode, status FROM turns WHERE session_id = ? ORDER BY created_at",
+                    "SELECT id, question, mode, status, created_at FROM turns "
+                    "WHERE session_id = ? ORDER BY created_at, rowid",
                     (session_id,),
                 )
             ]

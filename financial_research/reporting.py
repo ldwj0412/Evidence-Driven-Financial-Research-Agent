@@ -2,6 +2,7 @@
 
 import re
 from decimal import Decimal
+from itertools import groupby
 
 from .domain import COMPANIES, METRICS, Calculation, Fact, Operand, Period
 from .verification import (
@@ -10,6 +11,7 @@ from .verification import (
     company_disclosures,
     disclosure_qualifiers,
     render_number,
+    required_periods,
     resolve_period,
     unsummarized_disclosures,
     valid_attributions,
@@ -44,6 +46,51 @@ _MARGIN_NAMES = {
     "operating_income": "operating margin",
     "net_income": "net margin",
 }
+_SERIES_NAMES = {
+    "FEDFUNDS": "federal funds rate",
+    "CPIAUCSL": "consumer price index",
+    "UNRATE": "unemployment rate",
+}
+_CONFLICT_OPENING = {
+    "Supported": "The figures conflict.",
+    "Contradicted": "The two figures don’t conflict.",
+    "Unresolved": "The evidence is insufficient to tell whether the figures conflict.",
+}
+_DRAFT_ANCHORS = re.compile(
+    r"\b(?:constant currency|as reported|consolidated|standalone|year over year|FY\d+(?: Q[1-4])?)\b"
+    r"|[+−-]?\$?[+−-]?\d+(?:,\d{3})*(?:\.\d+)?"
+    r"(?:\s?%|\s+(?:percentage points?|basis points?|percent|pp|thousand|million|billion|trillion)\b|[BM]\b|/share\b)?",
+    re.IGNORECASE,
+)
+_DRAFT_COMPANIES = re.compile(
+    r"\b(?:" + "|".join(re.escape(name) for name, _ in COMPANIES.values()) + r")\b", re.IGNORECASE
+)
+
+
+def _conclusion_anchors(text):
+    # Keep each number next to its verified measurement basis, even when wording changes.
+    return [anchor for anchor, _ in groupby(_DRAFT_ANCHORS.findall(text.casefold()))]
+
+
+def validated_conclusion(draft, answers):
+    """Accept changes to prose while keeping the verified rows and their citations."""
+    if len(draft.answers) != len(answers):
+        return None
+    rewritten = []
+    for index, (proposed, answer) in enumerate(zip(draft.answers, answers, strict=True)):
+        text = " ".join(proposed.text.split())
+        original = answer["text"]
+        if (
+            proposed.index != index
+            or proposed.verdict != answer["verdict"]
+            or not text
+            or _conclusion_anchors(text) != _conclusion_anchors(original)
+            or set(_DRAFT_COMPANIES.findall(text.casefold()))
+            != set(_DRAFT_COMPANIES.findall(original.casefold()))
+        ):
+            return None
+        rewritten.append({**answer, "text": text})
+    return rewritten
 
 
 def _measurement_key(item):
@@ -105,25 +152,67 @@ def _comparison(claim, finding, evidence):
     return (prefix + answer, difference)
 
 
+def _answer_prefix(claim, finding, question):
+    if claim.assertion != "describe" and _YES_NO.search(question):
+        return "Yes. " if finding.verdict == "Supported" else "No. "
+    return ""
+
+
+def _readable_amount(value, unit):
+    amount = render_number(value, unit)
+    return amount.removesuffix(" pp") + " percentage points" if unit == "pp" else amount
+
+
+def _change_phrase(result, unit):
+    if not result:
+        return "was unchanged"
+    direction = "increased" if result > 0 else "decreased"
+    return f"{direction} by {_readable_amount(abs(result), unit)}"
+
+
 def _financial_answer(claim, finding, evidence, question):
     period = resolve_period(claim, evidence)
     if len(claim.entities) != 1 or not period or not finding.calculations:
         return finding.reason
     (ticker,) = claim.entities
     subject = f"{COMPANIES[ticker][0]}’s {period.label} {_metric(claim)}"
-    prefix = ""
-    if claim.assertion != "describe" and _YES_NO.search(question):
-        prefix = "Yes. " if finding.verdict == "Supported" else "No. "
-    result = finding.calculations[-1].result
-    if claim.target is None and claim.assertion in {"positive", "negative", "describe"}:
-        if claim.measure == "acceleration":
-            outcome = "accelerated" if result > 0 else "slowed" if result < 0 else "held steady"
-            return f"{prefix}{subject.removesuffix(' acceleration')} {outcome}."
-        if claim.measure in {"growth", "change"}:
-            subject = subject.removesuffix(" growth").removesuffix(" change")
-            outcome = "increased" if result > 0 else "decreased" if result < 0 else "was unchanged"
-            return f"{prefix}{subject} {outcome}."
-    return prefix + finding.reason
+    qualifiers = [value for value in (claim.scope, claim.basis) if value not in {"consolidated", "reported"}]
+    scope = f" ({', '.join(qualifiers)})" if qualifiers else ""
+    prefix = _answer_prefix(claim, finding, question)
+    item = finding.calculations[-1]
+    if claim.measure == "acceleration":
+        outcome = "accelerated" if item.result > 0 else "slowed" if item.result < 0 else "held steady"
+        magnitude = f" by {_readable_amount(abs(item.result), item.unit)}" if item.result else ""
+        return f"{prefix}{subject.removesuffix(' acceleration')}{scope} {outcome}{magnitude}."
+    if claim.measure in {"growth", "change"}:
+        subject = subject.removesuffix(" growth").removesuffix(" change")
+        baseline, _ = required_periods(claim.model_copy(update={"period": period}))
+        return f"{prefix}{subject}{scope} {_change_phrase(item.result, item.unit)} compared with {baseline.label}."
+    return f"{prefix}{subject}{scope} was {_readable_amount(item.result, item.unit)}."
+
+
+def _macro_answer(claim, finding, records, question):
+    item = finding.calculations[-1]
+    name = _SERIES_NAMES[claim.series]
+    dates = [
+        next((records[ref].end for ref in operand.evidence_ids if isinstance(records.get(ref), Fact)), None)
+        for operand in item.operands
+    ]
+    if not dates or any(day is None for day in dates):
+        return finding.reason
+    prefix = _answer_prefix(claim, finding, question)
+    if claim.measure == "change":
+        return f"{prefix}The {name} {_change_phrase(item.result, item.unit)} from {dates[0]:%B %Y} to {dates[-1]:%B %Y}."
+    if claim.measure == "growth":
+        return f"{prefix}The {name} {_change_phrase(item.result, item.unit)} year over year in {dates[-1]:%B %Y}."
+    return f"{prefix}The {name} was {_readable_amount(item.result, item.unit)} in {dates[-1]:%B %Y}."
+
+
+def _unresolved_amount(finding):
+    reason = finding.reason
+    for ticker, (name, _) in COMPANIES.items():
+        reason = re.sub(rf"\b{ticker}\b", name, reason)
+    return "The available evidence couldn’t verify the requested figure. " + reason
 
 
 def _growth_sentence(claim, finding, records):
@@ -377,30 +466,50 @@ def report_content(parsed, findings, evidence, attributions, question, disclosur
     separate_event = any(
         claim.kind == "event" and not asks_for_explanation(claim.event) for claim in claims.values()
     )
-    answers, event_answers, differences = [], [], []
+    answers, event_answers, causal_answers, differences = [], [], [], []
+    numeric_question = "" if any(claim.kind == "causal" for claim in claims.values()) else question
     inline_measurements = set()
+    comparisons = {
+        finding.claim_id: comparison
+        for finding in findings
+        if (claim := claims[finding.claim_id]).kind == "financial"
+        and (comparison := _comparison(claim, finding, evidence))
+    }
+    compared_measurements = {
+        _measurement_key(calculation)
+        for finding in findings
+        if finding.claim_id in comparisons
+        for calculation in finding.calculations
+    }
     for finding in findings:
         claim = claims[finding.claim_id]
         answer, refs = finding.reason, finding.evidence_ids
-        if claim.kind == "financial" and (comparison := _comparison(claim, finding, evidence)):
+        if comparison := comparisons.get(claim.id):
             answer, difference = comparison
             refs = difference.evidence_ids
             differences.append(difference.model_dump(mode="json"))
-        elif finding.verdict != "Unresolved" and claim.kind in {"financial", "macro"}:
-            has_direction = claim.kind == "financial" and claim.measure in {
-                "growth",
-                "change",
-                "acceleration",
-            }
-            if claim.assertion == "describe" and finding.calculations and not has_direction:
-                # The sourced figure card is the direct answer to a descriptive numeric question.
+        elif claim.kind == "conflict":
+            answer = f"{_CONFLICT_OPENING[finding.verdict]} {finding.reason}"
+        elif claim.kind in {"financial", "macro"}:
+            if (
+                finding.verdict == "Supported"
+                and claim.assertion == "describe"
+                and finding.calculations
+                and all(_measurement_key(item) in compared_measurements for item in finding.calculations)
+            ):
                 continue
-            if claim.kind == "financial":
-                answer = _financial_answer(claim, finding, evidence, question)
+            if finding.verdict == "Unresolved":
+                answer = _unresolved_amount(finding)
+            elif claim.kind == "macro":
+                answer = _macro_answer(claim, finding, records, numeric_question)
+            else:
+                answer = _financial_answer(claim, finding, evidence, numeric_question)
                 if (
                     explained
                     and not separate_event
                     and claim.assertion == "describe"
+                    and claim.scope == "consolidated"
+                    and claim.basis == "reported"
                     and (growth := _growth_sentence(claim, finding, records))
                 ):
                     answer, measurement = growth
@@ -426,14 +535,46 @@ def report_content(parsed, findings, evidence, attributions, question, disclosur
                 answer = _event_caption(claim, document, attributed_event.quote, evidence)
                 refs = [document.id]
             elif claim.id in explained:
-                # Verified disclosure excerpts are displayed with their citations below the answer.
+                # The sourced synthesis below supplies the explanation.
                 continue
+        elif claim.kind == "event":
+            answer = "The available sources couldn’t confirm what happened."
+        elif claim.kind == "causal":
+            answer = (
+                "An independent source supports the claimed cause."
+                if finding.verdict == "Supported"
+                else "The available evidence leaves the cause unresolved."
+            )
+            if finding.verdict == "Unresolved" and refs:
+                answer += " The sources provide context around the event."
         answer_row = {"text": answer, "evidence_ids": refs, "verdict": finding.verdict}
-        group = event_answers if claim.kind == "event" and finding.verdict == "Supported" else answers
+        group = (
+            causal_answers
+            if claim.kind == "causal"
+            else (event_answers if claim.kind == "event" and finding.verdict == "Supported" else answers)
+        )
         if answer_row not in group:
             group.append(answer_row)
+    if not answers and not event_answers and not causal_answers and explained:
+        if points:
+            lead = points.pop(0)
+            event_answers.append(
+                {
+                    "text": " ".join([lead["text"], *lead.get("details", [])]),
+                    "evidence_ids": lead["evidence_ids"],
+                    "verdict": "Supported",
+                }
+            )
+        else:
+            event_answers.append(
+                {
+                    "text": "The company disclosed reasons for the change. The filing excerpts are under Supporting details.",
+                    "evidence_ids": list(dict.fromkeys(item["evidence_id"] for item in quotes)),
+                    "verdict": "Supported",
+                }
+            )
     return {
-        "answers": event_answers + answers,
+        "answers": causal_answers + event_answers + answers,
         "highlights": _highlights(findings, claims, records, inline_measurements),
         "disclosure_summary": points,
         "explanations": quotes,
