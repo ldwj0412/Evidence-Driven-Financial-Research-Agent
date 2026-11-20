@@ -159,9 +159,9 @@ function clarification(turn, state) {
     ];
 }
 
-function claimList(findings) {
+function claimList(findings, showReasons = true) {
     return node("div", {class: "result-list"}, findings.map(item => node("div", {class: "result-claim"},
-        node("strong", {}, item.label), badge(item.verdict), node("p", {}, item.reason))));
+        node("strong", {}, item.label), badge(item.verdict), showReasons && node("p", {}, item.reason))));
 }
 
 function actionLabel(item) {
@@ -220,17 +220,72 @@ function evidenceBlocks(turn, state, ids, namespace) {
     }));
 }
 
+function reportSources(ids, records) {
+    const sources = new Map();
+    for (const id of ids) {
+        const record = records[id];
+        if (record?.url && !sources.has(record.url)) sources.set(record.url, record.title);
+    }
+    return sources.size > 0 && node("div", {class: "report-citations"},
+        [...sources].map(([url, title]) => link(url, title)));
+}
+
+function disclosureQuotes(items, records, markExcerpt = false) {
+    return node("ul", {class: "report-explanations"}, items.map(item => {
+        const quote = item.quote.replace(/\s+/g, " ").trim();
+        const isClipped = markExcerpt && !/[.!?…][”"']?$/.test(quote)
+            && (records[item.evidence_id]?.passages || []).some(passage => {
+                const text = passage.replace(/\s+/g, " ");
+                const start = text.indexOf(quote);
+                if (start < 0) return false;
+                const tail = text.slice(start + quote.length).trimStart();
+                return tail && !/^[.!?](?:\s|$)/.test(tail);
+            });
+        return node("li", {}, node("p", {}, "“" + item.quote + (isClipped ? "…" : "") + "”"),
+            reportSources([item.evidence_id], records));
+    }));
+}
+
 function reportPanel(turn, state) {
     const report = turn.report;
-    const calculations = report.findings.flatMap(item => item.calculations);
+    const hasHighlights = Array.isArray(report.highlights);
+    const calculations = hasHighlights
+        ? [...report.highlights.map(item => item.calculation), ...report.comparison_calculations]
+        : report.findings.flatMap(item => item.calculations);
     const referenceIds = [...report.evidence_ids, ...report.timeline.map(item => item.evidence_id)];
     const records = Object.fromEntries(turn.evidence.map(item => [item.id, item]));
+    const summaries = report.disclosure_summary;
+    const synthesized = Array.isArray(summaries);
+    const quotes = report.explanations || [];
+    const showQuotes = !synthesized || report.show_disclosure_quotes;
+    const quoteKeys = new Set(quotes.map(item => JSON.stringify([item.evidence_id, item.quote])));
+    const timeline = synthesized ? report.timeline.filter(item =>
+        item.role !== "explanation" || !quoteKeys.has(JSON.stringify([item.evidence_id, item.passage]))) : report.timeline;
+    const highlights = hasHighlights ? report.highlights.filter(item => !item.in_answer) : calculations.map(calculation =>
+        ({label: calculation.label, calculation}));
     return [
-        heading("Investigation report", "Conclusion", report.conclusion, report.overall),
+        heading("Investigation report", "Conclusion", hasHighlights ? null : report.conclusion, report.overall),
+        hasHighlights && report.answers.length > 0 && node("div", {class: "report-answers"},
+            report.answers.map(item => node("div", {class: "report-answer", "data-verdict": item.verdict},
+                node("p", {}, item.text), reportSources(item.evidence_ids, records)))),
+        highlights.length > 0 && node("div", {class: "metrics" + (hasHighlights ? " report-highlights" : "")},
+            highlights.map(item => node("div", {class: "metric"},
+                node("span", {}, item.label), node("strong", {}, item.calculation.display_value),
+                item.period_end && node("p", {class: "metric-period"}, item.period && item.period + " ended ",
+                    node("time", {datetime: item.period_end}, item.period_end)),
+                hasHighlights && reportSources(item.calculation.evidence_ids, records)))),
+        hasHighlights && quotes.length > 0 && block("What the company disclosed", [
+            summaries?.length > 0 && node("ul", {class: "report-explanations"}, summaries.map(item =>
+                node("li", {}, node("p", {}, item.text),
+                    (item.details || []).map(detail => node("p", {}, detail)),
+                    reportSources(item.evidence_ids, records)))),
+            showQuotes && disclosureQuotes(quotes, records, synthesized),
+            !showQuotes && summaries.length === 0 && node("p", {},
+                "The verified excerpts are under Supporting details."),
+        ]),
+        hasHighlights && report.explanation_note && node("p", {class: "report-note"}, report.explanation_note),
         report.carried.length > 0 && node("p", {class: "lede"}, "Carried forward · " + report.carried.join(", ")),
-        calculations.length > 0 && node("div", {class: "metrics"}, calculations.map(item =>
-            node("div", {class: "metric"}, node("span", {}, item.label), node("strong", {}, item.display_value)))),
-        claimList(report.findings),
+        claimList(report.findings, !hasHighlights),
         disclosure(state, "supporting-details", "Supporting details", [
             calculations.length > 0 && block("Calculations", node("div", {class: "sources"},
                 calculations.map((item, index) => disclosure(state, "calculation-" + index,
@@ -242,8 +297,10 @@ function reportPanel(turn, state) {
                                 node("td", {}, operand.label), node("td", {}, operand.display_value))))),
                     ])))),
             referenceIds.length > 0 && block("Source evidence", evidenceBlocks(turn, state, referenceIds, "report")),
-            report.timeline.length > 0 && block("Evidence timeline", node("ol", {class: "timeline"},
-                report.timeline.map(item => node("li", {}, node("time", {datetime: item.date}, item.date),
+            synthesized && !showQuotes && quotes.length > 0
+                && block("Source excerpts", disclosureQuotes(quotes, records, true)),
+            timeline.length > 0 && block("Evidence timeline", node("ol", {class: "timeline"},
+                timeline.map(item => node("li", {}, node("time", {datetime: item.date}, item.date),
                     link(records[item.evidence_id]?.url, item.title), node("p", {}, item.passage))))),
             block("Limitations", node("div", {},
                 report.limitations.length ? report.limitations.map(item => node("p", {}, item))

@@ -106,6 +106,19 @@ def main():
         page.reload()
         sessions.click()
         expect(session_list.get_by_role("button", name=title, exact=True)).to_have_count(0)
+
+        select_fixture_replay(page)
+        page.get_by_role("button", name="New session").click()
+        expect(page.get_by_role("heading", name="Start an investigation")).to_be_visible()
+        page.get_by_role("button", name="Company event", exact=True).click()
+        page.get_by_role("button", name="Run investigation").click()
+        expect(page.get_by_role("heading", name="Conclusion", exact=True)).to_be_visible(timeout=10000)
+        expect(page.get_by_text("Microsoft announced its FY2024 results on July 30, 2024.")).to_be_visible()
+        expect(page.locator(".report-highlights .metric strong")).to_have_text(["$245.12B", "15.67%"])
+        expect(page.locator(".report-answer").first.locator("a")).to_have_attribute(
+            "href", "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/msft-ex99_1.htm"
+        )
+        expect(page.locator("details.report-support")).not_to_have_attribute("open", "")
         browser.close()
     print("Browser acceptance passed.")
 

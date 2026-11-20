@@ -7,7 +7,12 @@ import httpx
 import pytest
 
 from financial_research.fixtures import PROMPTS
+from financial_research.presentation import workspace_view
 from financial_research.service import ResearchService
+
+
+def highlight_values(turn):
+    return [item["calculation"]["display_value"] for item in workspace_view(turn)["report"]["highlights"]]
 
 
 def test_reuse_restart_and_conflict_history(tmp_path):
@@ -42,6 +47,42 @@ def test_reuse_restart_and_conflict_history(tmp_path):
     ]
     assert before_restart["report"]["overall"] == "Contradicted"
     assert ResearchService(path).view(conflict) == before_restart
+
+
+def test_saved_legacy_report_opens_with_its_original_conclusion(tmp_path):
+    service = ResearchService(tmp_path / "legacy.sqlite3")
+    turn = service.start(service.store.new_session(), PROMPTS["revenue"], "replay")
+    asyncio.run(service.execute(turn))
+    modern = service.view(turn)["report"]
+    legacy = {
+        key: modern[key]
+        for key in (
+            "overall",
+            "findings",
+            "evidence_ids",
+            "timeline",
+            "limitations",
+            "carried",
+            "reused_sources",
+            "cutoff",
+        )
+    }
+    legacy["conclusion"] = "Saved conclusion from before the report redesign."
+    # Assign the snapshot directly to model a legacy database on disk.
+    with service.store.connect() as db:
+        db.execute(
+            "UPDATE turns SET data = json_set(data, '$.report', json(?)) WHERE id = ?",
+            (json.dumps(legacy), turn),
+        )
+
+    reopened = ResearchService(service.store.path, recover=True)
+    original = reopened.view(turn)
+    assert original["report"] == legacy
+    report = workspace_view(original)["report"]
+    assert report["conclusion"] == legacy["conclusion"]
+    assert "highlights" not in report
+    assert report["findings"][0]["calculations"][-1]["display_value"] == "8.79 pp"
+    assert reopened.view(turn) == original
 
 
 def test_pending_clarification_resumes_the_original_run_after_restart(tmp_path):
@@ -188,7 +229,8 @@ def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company)
         assert item["status"] == "Complete"
         assert item["counts"]["lookups"] == 1
         assert item["report"]["overall"] == "Supported"
-        assert "8.79 pp" in item["report"]["conclusion"]
+        assert "revenue growth accelerated" in item["report"]["conclusion"]
+        assert "8.79 pp" in highlight_values(item)
     else:
         assert schemas == ["FinancialSubject"]
         assert item["status"] == "Failed"
@@ -361,8 +403,115 @@ def test_live_parse_repairs_a_clarification_that_asks_for_filing_figures(tmp_pat
     asyncio.run(service.execute(turn))
     result = service.view(turn)
     assert result["status"] == "Complete"
-    assert "15.67%" in result["report"]["conclusion"]
+    assert "15.67%" in highlight_values(result)
     assert any(e["kind"] == "validation" and e["outcome"] == "retry" for e in result["events"])
+
+
+@pytest.mark.parametrize("repair", ["unneeded", "complete", "empty"])
+def test_live_disclosure_synthesis_covers_verified_drivers_and_survives_restart(tmp_path, repair):
+    from financial_research.fixtures import lookup_fixture, parse_fixture
+
+    parsed = parse_fixture(PROMPTS["event"]).model_dump(mode="json")
+    quote = "Revenue grew in FY2024, driven by Azure sales and Office 365 Commercial growth."
+    summary = "Microsoft credited higher Azure and Office 365 Commercial sales for its revenue growth."
+    missed_quote = "The increase in Gaming revenue was primarily due to Activision Blizzard sales."
+    missed_summary = "Microsoft attributed the Gaming revenue increase mainly to Activision Blizzard."
+    schemas = []
+
+    async def lookup(action, cutoff):
+        records = await lookup_fixture(action, cutoff)
+        if action.operation == "release":
+            (release,) = records
+            passages = [*release.passages, quote]
+            if repair != "unneeded":
+                passages.append(missed_quote)
+            return [release.model_copy(update={"passages": passages})]
+        return records
+
+    def handler(request):
+        payload = json.loads(request.content)
+        context = json.loads(payload["messages"][-1]["content"])
+        name = payload["response_format"]["json_schema"]["name"]
+        schemas.append(name)
+        if name == "Parsed":
+            return _model_response(parsed)
+        if name == "Plan":
+            return _model_response({"actions": context["allowed_candidates"]})
+        if name == "DisclosureSynthesis":
+            assert [entry["quote"] for entry in context["excerpts"]] == [missed_quote]
+            summaries = (
+                [{"claim_id": "c2", "text": missed_summary, "quote_indices": [0]}]
+                if repair == "complete"
+                else []
+            )
+            return _model_response({"summaries": summaries})
+        assert name == "Attributions"
+        assert context["summarize_disclosures"] is True
+        return _model_response(
+            {
+                "entries": [
+                    {
+                        "claim_id": "c2",
+                        "evidence_id": "replay-msft-release",
+                        "quote": "Microsoft Corp. today announced the following results for the fiscal year ended June 30, 2024",
+                        "role": "event",
+                    },
+                    {
+                        "claim_id": "c2",
+                        "evidence_id": "replay-msft-release",
+                        "quote": quote,
+                        "role": "explanation",
+                    },
+                    *(
+                        [
+                            {
+                                "claim_id": "c2",
+                                "evidence_id": "replay-msft-release",
+                                "quote": missed_quote,
+                                "role": "explanation",
+                            }
+                        ]
+                        if repair != "unneeded"
+                        else []
+                    ),
+                ],
+                "summaries": [{"claim_id": "c2", "text": summary, "quote_indices": [1]}],
+            }
+        )
+
+    path = tmp_path / "synthesized-report.sqlite3"
+    service = ResearchService(
+        path,
+        _config(tmp_path),
+        http_transport=httpx.MockTransport(handler),
+        replay=SimpleNamespace(lookup=lookup),
+    )
+    turn = service.start(
+        service.store.new_session(),
+        "What did Microsoft announce for FY2024, and what did it say drove revenue growth?",
+        "live",
+        cutoff=datetime(2025, 1, 1, 15, tzinfo=UTC),
+    )
+    asyncio.run(service.execute(turn))
+    result = service.view(turn)
+    assert result["status"] == "Complete"
+    expected_schemas = ["Parsed", "Plan", "Attributions"]
+    expected_summaries = [summary]
+    expected_quotes = [quote]
+    if repair != "unneeded":
+        expected_schemas.append("DisclosureSynthesis")
+        expected_quotes.append(missed_quote)
+    if repair == "complete":
+        expected_summaries.append(missed_summary)
+    assert schemas == expected_schemas
+    assert [point["text"] for point in result["report"]["disclosure_summary"]] == expected_summaries
+    assert all(
+        point["evidence_ids"] == ["replay-msft-release"] for point in result["report"]["disclosure_summary"]
+    )
+    assert [item["quote"] for item in result["report"]["explanations"]] == expected_quotes
+    assert bool(result["report"].get("explanation_note")) == (repair == "empty")
+    assert not result["report"]["show_disclosure_quotes"]
+    assert ResearchService(path, recover=True).view(turn) == result
 
 
 def test_live_clarification_keeps_answers_from_earlier_rounds_after_restart(tmp_path):
@@ -410,7 +559,7 @@ def test_live_clarification_keeps_answers_from_earlier_rounds_after_restart(tmp_
     assert received == [None, metric_answer, metric_answer | year_answer]
     assert result["status"] == "Complete"
     assert result["run_id"] == initial_run_id
-    assert "$20.91B" in result["report"]["conclusion"]
+    assert "$20.91B" in highlight_values(result)
     assert [
         event["data"]["answers"]
         for event in result["events"]
@@ -468,8 +617,9 @@ def test_unresolved_causation_does_not_turn_a_risk_disclosure_into_a_driver(tmp_
     assert report["overall"] == "Partially supported"
     assert [finding["verdict"] for finding in report["findings"]] == ["Supported", "Unresolved"]
     assert any(item["passage"] == quote for item in report["timeline"])
-    assert "8.79 pp" in report["conclusion"]
+    assert "8.79 pp" in highlight_values(result)
     assert quote not in report["conclusion"]
+    assert report["explanations"] == []
 
 
 def test_live_parser_rejects_a_requested_future_as_of_date(tmp_path):

@@ -14,10 +14,23 @@ from langgraph.types import Command, interrupt
 from pydantic import TypeAdapter, ValidationError
 
 from .config import load_config
-from .domain import Attributions, Document, EvidenceRecord, Fact, FinancialSubject, Finding, Gap, Parsed, Plan
+from .domain import (
+    Attribution,
+    Attributions,
+    DisclosureSynthesis,
+    Document,
+    EvidenceRecord,
+    Fact,
+    FinancialSubject,
+    Finding,
+    Gap,
+    Parsed,
+    Plan,
+)
 from .fixtures import fixture_attributions, lookup_fixture, parse_fixture
 from .planning import (
     ATTRIBUTION_PROMPT,
+    DISCLOSURE_SYNTHESIS_PROMPT,
     FINANCIAL_SUBJECT_PROMPT,
     PARSE_PROMPT,
     PLAN_PROMPT,
@@ -37,15 +50,20 @@ from .providers import (
     ProviderError,
     Transport,
 )
+from .reporting import report_content
 from .sec import EASTERN, date_end
 from .storage import Store, json_text, utc_now
 from .verification import (
+    asks_for_explanation,
+    company_disclosures,
     overall,
     render_number,
     required_periods,
     resolve_period,
     select_fact,
+    unsummarized_disclosures,
     valid_attributions,
+    verified_disclosure_summaries,
     verify,
 )
 
@@ -63,8 +81,11 @@ class State(TypedDict, total=False):
     plan: dict
     evidence: list[dict]
     findings: list[dict]
+    snapshot: dict
     gaps: list[dict]
     attributions: list[dict]
+    disclosure_summaries: list[dict]
+    disclosure_repair_attempted: bool
     followup: int
     problem: str
     limitations: list[str]
@@ -209,7 +230,7 @@ class ResearchService:
                         {"message": result["problem"]},
                     )
                 else:
-                    snapshot = run.report_snapshot(result)
+                    snapshot = result["snapshot"]
                     self.store.finish(
                         turn,
                         "Complete",
@@ -602,10 +623,12 @@ class Investigation:
         self.begin("Verify", state.get("followup", 0))
         parsed = Parsed.model_validate(state["parsed"])
         evidence = EVIDENCE.validate_python(state["evidence"])
-        old = Attributions.model_validate({"entries": state.get("attributions", [])}).entries
+        old = [Attribution.model_validate(item) for item in state.get("attributions", [])]
+        summaries = list(state.get("disclosure_summaries", []))
         documents = [item for item in evidence if isinstance(item, Document) and item.published]
         relevant = [claim for claim in parsed.claims if claim.kind in {"event", "causal"}]
         limitations = list(state.get("limitations", []))
+        asks_why = asks_for_explanation(state["question"])
         if relevant and documents:
             try:
                 if self.mode == "replay":
@@ -617,6 +640,7 @@ class Investigation:
                         "source attribution",
                         ATTRIBUTION_PROMPT,
                         {
+                            "summarize_disclosures": asks_why,
                             "claims": dump(*relevant),
                             "documents": [
                                 {
@@ -632,15 +656,42 @@ class Investigation:
                 else:
                     proposed = Attributions(entries=[])
                 old += proposed.entries
+                summaries.extend(verified_disclosure_summaries(proposed, parsed.claims, evidence))
             except ProviderError as exc:
                 limitations.append(str(exc))
         checked = valid_attributions(parsed.claims, evidence, old)
         unique = {(item.claim_id, item.evidence_id, item.quote, item.role): item for item in checked}
+        repair_attempted = state.get("disclosure_repair_attempted", False)
+        if self.mode == "live" and asks_why and not repair_attempted and self.budget.remaining > 1.2:
+            disclosures = company_disclosures(
+                {claim.id: claim for claim in parsed.claims},
+                {document.id: document for document in documents},
+                unique.values(),
+            )
+            missing = unsummarized_disclosures(disclosures, summaries)[:16]
+            if missing:
+                repair_attempted = True
+                try:
+                    repair = await self.router.ask(
+                        DisclosureSynthesis,
+                        "disclosure synthesis",
+                        DISCLOSURE_SYNTHESIS_PROMPT,
+                        {"excerpts": dump(*missing)},
+                    )
+                    repaired = Attributions(entries=missing, summaries=repair.summaries)
+                    summaries.extend(verified_disclosure_summaries(repaired, parsed.claims, evidence))
+                except ProviderError as exc:
+                    limitations.append(str(exc))
         findings, gaps = verify(parsed.claims, evidence, list(unique.values()))
-        output = {"findings": dump(*findings), "gaps": dump(*gaps), "attributions": dump(*unique.values())}
+        output = {
+            "findings": dump(*findings),
+            "gaps": dump(*gaps),
+            "attributions": dump(*unique.values()),
+            "disclosure_summaries": summaries,
+        }
         self.store.patch(self.id, verification=output)
         self.complete(output)
-        return {**output, "limitations": limitations}
+        return {**output, "limitations": limitations, "disclosure_repair_attempted": repair_attempted}
 
     async def report(self, state):
         self.begin("Report")
@@ -652,7 +703,7 @@ class Investigation:
                 "evidence_ids": snapshot["evidence_ids"],
             }
         )
-        return {}
+        return {"snapshot": snapshot}
 
     def context_snapshot(self, state):
         parsed = Parsed.model_validate(state["parsed"])
@@ -666,6 +717,7 @@ class Investigation:
         return parsed.model_copy(update={"claims": claims}).model_dump(mode="json")
 
     def report_snapshot(self, state):
+        parsed = Parsed.model_validate(state["parsed"])
         findings = [Finding.model_validate(item) for item in state.get("findings", [])]
         evidence = EVIDENCE.validate_python(state.get("evidence", []))
         refs = list(dict.fromkeys(ref for finding in findings for ref in finding.evidence_ids))
@@ -706,27 +758,21 @@ class Investigation:
             limits.append(state["problem"])
         if not self.budget.remaining:
             limits.append("The active investigation budget was exhausted.")
-        conclusion = []
-        for finding in findings:
-            conclusion.append(finding.reason)
-            event = next(
-                (
-                    item
-                    for item in sorted_timeline
-                    if item["role"] == "event"
-                    and any(
-                        attribution["evidence_id"] == item["evidence_id"]
-                        and attribution["claim_id"] == finding.claim_id
-                        for attribution in attributions
-                    )
-                ),
-                None,
-            )
-            if event and finding.verdict == "Supported":
-                conclusion[-1] = f"{event['date']} · {event['title']} reported “{event['passage']}”"
+        content = report_content(
+            parsed,
+            findings,
+            evidence,
+            [Attribution.model_validate(item) for item in attributions],
+            state["question"],
+            state.get("disclosure_summaries", []),
+        )
+        conclusion = " ".join(item["text"] for item in content["answers"])
+        if not conclusion:
+            conclusion = " ".join(dict.fromkeys(item.reason for item in findings))
         return {
             "overall": overall(findings),
-            "conclusion": " ".join(conclusion),
+            "conclusion": conclusion,
+            **content,
             "findings": dump(*findings),
             "evidence_ids": refs,
             "timeline": sorted_timeline,

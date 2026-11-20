@@ -16,6 +16,14 @@ def workspace_view(turn):
     report = result.get("report")
     if report:
         report = {**report, "findings": [display_finding(item) for item in report["findings"]]}
+        if "answers" in report:
+            report["highlights"] = [
+                {**item, "calculation": display_calculation(item["calculation"])}
+                for item in report["highlights"]
+            ]
+            report["comparison_calculations"] = [
+                display_calculation(item) for item in report["comparison_calculations"]
+            ]
         result["report"] = report
         claims = result["parsed"]["claims"]
         if (
@@ -47,15 +55,16 @@ def workspace_view(turn):
 def display_finding(finding):
     return {
         **finding,
-        "calculations": [
-            {
-                **item,
-                "display_value": render_number(Decimal(item["result"]), item["unit"]),
-                "operands": [
-                    {**operand, "display_value": render_number(Decimal(operand["value"]), operand["unit"])}
-                    for operand in item["operands"]
-                ],
-            }
-            for item in finding["calculations"]
+        "calculations": [display_calculation(item) for item in finding["calculations"]],
+    }
+
+
+def display_calculation(item):
+    return {
+        **item,
+        "display_value": render_number(Decimal(item["result"]), item["unit"]),
+        "operands": [
+            {**operand, "display_value": render_number(Decimal(operand["value"]), operand["unit"])}
+            for operand in item["operands"]
         ],
     }

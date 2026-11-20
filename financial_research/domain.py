@@ -296,5 +296,15 @@ class Attribution(Record):
     role: Literal["event", "explanation", "causal_evidence", "measurement"]
 
 
-class Attributions(Record):
+class DisclosureSummary(Record):
+    claim_id: str
+    text: str = Field(min_length=12, max_length=520)
+    quote_indices: list[int] = Field(min_length=1, max_length=6)
+
+
+class DisclosureSynthesis(Record):
+    summaries: list[DisclosureSummary] = Field(default_factory=list, max_length=8)
+
+
+class Attributions(DisclosureSynthesis):
     entries: list[Attribution] = Field(max_length=16)

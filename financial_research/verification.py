@@ -499,6 +499,74 @@ def verify_macro(claim, evidence):
     ], None
 
 
+_EXPLANATION_REQUEST = re.compile(
+    r"\b(?:why|drove|drivers?|explain\w*|explanations?|reasons?|caus(?:e[ds]?|al|ing))\b",
+    re.IGNORECASE,
+)
+_STATED_DRIVER = re.compile(
+    r"\b(?:driven by|due to|reflect(?:ed|s)|resulted from|attribut(?:ed|able) to|contributed to|because of)\b",
+    re.IGNORECASE,
+)
+_TENTATIVE_DRIVER = re.compile(r"\b(?:no|not|never|may|might|could|would|can)\b", re.IGNORECASE)
+_OBSERVED_CHANGE = re.compile(
+    r"\b(?:increas(?:e|ed)|decreas(?:e|ed)|rose|fell|grew|declin(?:e|ed)|expanded|contracted|"
+    r"improv(?:ed|ement)|chang(?:e|ed)|growth|(?:as )?compared (?:to|with))\b",
+    re.IGNORECASE,
+)
+
+
+def asks_for_explanation(text):
+    return bool(_EXPLANATION_REQUEST.search(text))
+
+
+def named_metrics(text):
+    text = re.sub(r"\bcosts? of (?:net )?(?:revenues?|sales)\b", "", text, flags=re.IGNORECASE)
+    return {key for key, pattern in _METRIC_WORDS.items() if re.search(pattern, text, re.IGNORECASE)}
+
+
+def _disclosed_driver_cause(text, metrics, *, metric_first=False):
+    for sentence in re.split(r"(?<=[.!?])\s+", text):
+        if (driver := _STATED_DRIVER.search(sentence)) and not _TENTATIVE_DRIVER.search(sentence):
+            outcome = sentence[: driver.start()]
+            if metric_first and not any(
+                re.match(
+                    r"\s*(?:(?:total|consolidated|reported)\s+)*" + _METRIC_WORDS[metric],
+                    outcome,
+                    re.IGNORECASE,
+                )
+                for metric in metrics
+            ):
+                continue
+            if _OBSERVED_CHANGE.search(outcome) and (not metrics or metrics & named_metrics(outcome)):
+                cause = sentence[driver.end() :].strip()
+                if cause:
+                    return cause
+    return None
+
+
+def disclosed_driver(text, metrics=frozenset(), *, metric_first=False):
+    return _disclosed_driver_cause(text, metrics, metric_first=metric_first) is not None
+
+
+def _is_company_explanation(claim, document, attribution):
+    return (
+        attribution.role == "explanation"
+        and document.source == "sec"
+        and document.entity in claim.entities
+        and (not claim.event_date or document.published == claim.event_date)
+    )
+
+
+def _explanation_metrics(claim):
+    return {claim.metric} if claim.metric else named_metrics(claim.event or "")
+
+
+def company_disclosed_cause(claim, document, attribution):
+    if _is_company_explanation(claim, document, attribution):
+        return _disclosed_driver_cause(attribution.quote, _explanation_metrics(claim))
+    return None
+
+
 def valid_attributions(claims, evidence, proposed):
     documents = {item.id: item for item in evidence if isinstance(item, Document) and item.published}
     by_claim = {claim.id: claim for claim in claims}
@@ -510,12 +578,112 @@ def valid_attributions(claims, evidence, proposed):
             document
             and claim
             and (not document.entity or document.entity in claim.entities)
+            and (not claim.period or not document.period or claim.period == document.period)
             and any(
                 " ".join(item.quote.split()) in " ".join(passage.split()) for passage in document.passages
             )
         ):
             checked.append(item)
     return checked
+
+
+def company_disclosures(claims, records, checked):
+    return [
+        item
+        for item in checked
+        if company_disclosed_cause(claims[item.claim_id], records[item.evidence_id], item)
+    ]
+
+
+_PARTIAL_OFFSET = re.compile(r"\b(?:partly|partially) offset by\s+(?P<cost>.+?)[.!?]?$", re.IGNORECASE)
+_QUANTIFIED_FX = re.compile(
+    r"Changes in foreign exchange rates (?P<sign>positively|negatively) impacted "
+    r"(?P<metric>[a-z ]+) by (?P<amount>\$[\d,.]+ (?:thousand|million|billion))\b.*",
+    re.IGNORECASE,
+)
+
+
+def disclosure_qualifiers(claim, document, attribution):
+    """Find explicit qualifications in the same filing paragraph as a verified driver."""
+    anchor = re.split(r"(?<=[.!?])\s+", " ".join(attribution.quote.split()), maxsplit=1)[0]
+    metrics = _explanation_metrics(claim)
+    for passage in document.passages:
+        sentences = re.split(r"(?<=[.!?])\s+", " ".join(passage.split()))
+        for index, sentence in enumerate(sentences):
+            # Match the driver sentence itself, then consider only the immediately following FX sentence.
+            if anchor not in sentence or not (cause := _disclosed_driver_cause(sentence, metrics)):
+                continue
+            qualifiers = []
+            if offset := _PARTIAL_OFFSET.search(cause):
+                subject = re.split(r"\s+that (?:was|were|is|are)\s+", offset["cost"], maxsplit=1)[0]
+                qualifiers.append(("offset", subject, offset[0].rstrip(".!?")))
+            if index + 1 < len(sentences) and (fx := _QUANTIFIED_FX.fullmatch(sentences[index + 1])):
+                outcome = _STATED_DRIVER.split(sentence, maxsplit=1)[0]
+                if named_metrics(fx["metric"]) & named_metrics(outcome):
+                    verb = "added" if fx["sign"].lower() == "positively" else "reduced"
+                    qualifiers.append(("fx", (verb, fx["amount"], fx["metric"].lower()), fx[0]))
+            return qualifiers
+    return []
+
+
+def unsummarized_disclosures(disclosures, summaries):
+    covered = {
+        (summary["claim_id"], ref["evidence_id"], ref["quote"])
+        for summary in summaries
+        for ref in summary["quotes"]
+    }
+    return [item for item in disclosures if (item.claim_id, item.evidence_id, item.quote) not in covered]
+
+
+_SUMMARY_NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
+
+
+def verified_disclosure_summaries(attributions, claims, evidence):
+    """Keep synthesis only when its cited excerpts survive source and disclosure checks."""
+    checked = valid_attributions(claims, evidence, attributions.entries)
+    by_claim = {claim.id: claim for claim in claims}
+    by_id = {item.id: item for item in evidence}
+    eligible = {
+        index: item
+        for index, item in enumerate(attributions.entries)
+        if item in checked and _is_company_explanation(by_claim[item.claim_id], by_id[item.evidence_id], item)
+    }
+    drivers = {
+        index
+        for index, item in eligible.items()
+        if company_disclosed_cause(by_claim[item.claim_id], by_id[item.evidence_id], item)
+    }
+    summaries = []
+    for item in attributions.summaries:
+        indices = list(dict.fromkeys(item.quote_indices))
+        refs = [eligible.get(index) for index in indices]
+        if any(not ref or ref.claim_id != item.claim_id for ref in refs):
+            continue
+        # Context may supplement a driver from the same filing and claim.
+        driver_documents = {eligible[index].evidence_id for index in indices if index in drivers}
+        metrics = _explanation_metrics(by_claim[item.claim_id])
+        if any(
+            ref.evidence_id not in driver_documents
+            or (index not in drivers and not metrics & named_metrics(ref.quote))
+            for index, ref in zip(indices, refs, strict=True)
+        ):
+            continue
+        text = " ".join(item.text.split())
+        paraphrase = text.strip(' .“”"').casefold()
+        quotes = [" ".join(ref.quote.split()).casefold() for ref in refs]
+        source_numbers = set(_SUMMARY_NUMBER.findall(" ".join(quotes)))
+        if not paraphrase or text[-1:] not in {".", "!", "?"} or any(paraphrase in quote for quote in quotes):
+            continue
+        if set(_SUMMARY_NUMBER.findall(text)) - source_numbers:
+            continue
+        summaries.append(
+            {
+                "claim_id": item.claim_id,
+                "text": text,
+                "quotes": [{"quote": ref.quote, "evidence_id": ref.evidence_id} for ref in refs],
+            }
+        )
+    return summaries
 
 
 def verify(
@@ -548,11 +716,17 @@ def verify(
             references = list(dict.fromkeys(item.evidence_id for item in related))
             relevant_documents = {item.id: item for item in evidence if isinstance(item, Document)}
             if claim.kind == "event" and any(
-                item.role == "event"
-                and (
-                    not claim.event_date
-                    or relevant_documents[item.evidence_id].published == claim.event_date
-                    or claim.event_date.isoformat() in item.quote
+                (
+                    item.role == "event"
+                    and (
+                        not claim.event_date
+                        or relevant_documents[item.evidence_id].published == claim.event_date
+                        or claim.event_date.isoformat() in item.quote
+                    )
+                )
+                or (
+                    asks_for_explanation(claim.event)
+                    and company_disclosed_cause(claim, relevant_documents[item.evidence_id], item)
                 )
                 for item in related
             ):

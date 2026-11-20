@@ -29,6 +29,7 @@ from .sec import (
     stable_id,
 )
 from .storage import utc_now
+from .verification import asks_for_explanation, disclosed_driver, named_metrics
 
 INVESTIGATION_TIMEOUT_SECONDS = 120.0
 MODEL_ATTEMPT_TIMEOUT_SECONDS = 120.0
@@ -275,6 +276,18 @@ def relevant_passages(passages, query, maximum=20):
             pair[0],
         ),
     )
+    if asks_for_explanation(query or ""):
+        metrics = named_metrics(query or "")
+        drivers = [(index, passage) for index, passage in scored if disclosed_driver(passage, metrics)]
+        # Keep the company-wide result visible alongside the highest-scoring segment excerpts.
+        headline = next(
+            (item for item in drivers if disclosed_driver(item[1], metrics, metric_first=True)), None
+        )
+        if headline:
+            drivers = [headline, *(item for item in drivers if item != headline)]
+        drivers = drivers[: min(3, maximum // 2)]
+        prioritized = {index for index, _ in drivers}
+        scored = drivers + [pair for pair in scored if pair[0] not in prioritized]
     return [passage for _, passage in scored[:maximum]]
 
 
