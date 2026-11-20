@@ -39,7 +39,29 @@ If you want to customize settings in a file, copy the template:
 Copy-Item config.example.toml config.local.toml
 ```
 
-To name the variable explicitly, set `api_key = "${OPENROUTER_API_KEY}"` under `[openrouter]`. The same full-value syntax works for `fred.api_key`, `tavily.api_key`, and `sec.user_agent`. You can use a custom variable name. An explicit reference requires that variable to be set.
+For example, put this complete configuration in `config.local.toml`:
+
+```toml
+[openrouter]
+api_key = "${OPENROUTER_API_KEY}"
+base_url = "https://openrouter.ai/api/v1"
+model = "openai/gpt-5-mini"
+
+[fred]
+api_key = "${FRED_API_KEY}"
+
+[tavily]
+api_key = "${TAVILY_API_KEY}"
+
+[sec]
+user_agent = "NLP Group Research <research@example.com>"
+```
+
+Set the three API key variables in the environment that launches Streamlit. The app replaces each `${VARIABLE_NAME}` reference with the value of that variable. You can use your own variable names if they match the references in the file. Replace the SEC example with your project name and real contact email, or use `user_agent = "${SEC_USER_AGENT}"` to read it from the environment.
+
+To configure a provider without an environment variable, replace its reference with the value itself, for example `api_key = "replace-with-your-fred-key"` under `[fred]`. You can mix direct values and environment references across providers. Keep real keys in your local environment or in the Git-ignored `config.local.toml`.
+
+Keep the OpenRouter base URL as shown. The app appends `/chat/completions` when it sends a request.
 
 Blank fields still use the default names in the table. The default `openrouter.model` is `openai/gpt-5-mini`. Choose a model with strict structured output if you change it.
 

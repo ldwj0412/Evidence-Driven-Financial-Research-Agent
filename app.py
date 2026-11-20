@@ -54,6 +54,8 @@ def handle(event, selection, selected):
         st.session_state.mode = event["mode"]
     elif command == "new":
         service.store.new_session()
+    elif command == "delete_session" and event.get("id") == selection["session_id"]:
+        service.delete_session(selection["session_id"])
     elif command == "session":
         session = event.get("id")
         if session not in {item["id"] for item in service.store.sessions()}:

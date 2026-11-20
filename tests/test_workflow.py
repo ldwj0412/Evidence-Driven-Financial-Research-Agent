@@ -62,6 +62,57 @@ def test_pending_clarification_resumes_the_original_run_after_restart(tmp_path):
     )
 
 
+def test_delete_session_removes_linked_turns_history_cache_and_checkpoints(tmp_path):
+    import sqlite3
+    from contextlib import closing
+
+    service = ResearchService(tmp_path / "research.sqlite3")
+    keep = service.store.new_session()
+    kept_turn = service.start(keep, PROMPTS["revenue"], "replay")
+    asyncio.run(service.execute(kept_turn))
+    kept = service.view(kept_turn)
+
+    remove = service.store.new_session()
+    turn = service.start(remove, PROMPTS["revenue"], "replay")
+    asyncio.run(service.execute(turn))
+    child = service.start(remove, PROMPTS["operating"], "replay", parent=turn)
+    asyncio.run(service.execute(child))
+    pending = service.start(remove, PROMPTS["profit"], "replay")
+    asyncio.run(service.execute(pending))
+    assert service.view(pending)["status"] == "Waiting for clarification"
+    assert service.store.lookups(remove, "replay")
+
+    service.delete_session(remove)
+
+    service = ResearchService(service.store.path, recover=True)
+    assert [session["id"] for session in service.store.sessions()] == [keep]
+    assert service.store.selection() == {"session_id": keep, "turn_id": kept_turn}
+    assert service.view(kept_turn) == kept
+    assert service.store.turns(remove) == []
+    assert service.store.lookups(remove, "replay") == []
+    assert service.store.events(turn) == []
+    with closing(sqlite3.connect(service.checkpoints)) as conn:
+        assert conn.execute("SELECT DISTINCT thread_id FROM checkpoints").fetchall() == [(kept["run_id"],)]
+        assert conn.execute("SELECT DISTINCT thread_id FROM writes").fetchall() == [(kept["run_id"],)]
+
+
+def test_delete_session_protects_active_runs_and_replaces_the_last_session(tmp_path):
+    service = ResearchService(tmp_path / "research.sqlite3")
+    session = service.store.new_session()
+    turn = service.start(session, PROMPTS["revenue"], "replay")
+
+    with pytest.raises(ValueError, match="active investigation"):
+        service.delete_session(session)
+    assert service.view(turn)["status"] == "Queued"
+
+    service.store.recover()
+    service.delete_session(session)
+    selection = service.store.selection()
+    assert selection["session_id"] != session
+    assert selection["turn_id"] is None
+    assert len(service.store.sessions()) == 1
+
+
 def test_followup_keeps_cached_operands_and_fetches_a_missing_year(tmp_path):
     service = ResearchService(tmp_path / "new-operand.sqlite3")
     session = service.store.new_session()
@@ -269,6 +320,51 @@ def test_live_clarification_ignores_an_unrequested_as_of_date(tmp_path):
     assert item["report"]["overall"] == "Supported"
 
 
+def test_live_parse_repairs_a_clarification_that_asks_for_filing_figures(tmp_path):
+    from financial_research.fixtures import lookup_fixture, parse_fixture
+
+    replies = [
+        {
+            "clarification": {
+                "message": "Please enter the figures below.",
+                "fields": [
+                    {"name": "period", "label": "FY2024 consolidated revenue (USD)", "control": "text"},
+                    {"name": "comparison", "label": "FY2023 consolidated revenue (USD)", "control": "text"},
+                ],
+            }
+        },
+        parse_fixture(PROMPTS["event"]).model_dump(mode="json"),
+    ]
+
+    def handler(request):
+        payload = json.loads(request.content)
+        context = json.loads(payload["messages"][-1]["content"])
+        schema = payload["response_format"]["json_schema"]["name"]
+        if schema == "Parsed":
+            return _model_response(replies.pop(0))
+        if schema == "Attributions":
+            return _model_response({"entries": []})
+        return _model_response({"actions": context["allowed_candidates"]})
+
+    service = ResearchService(
+        tmp_path / "parse-repair.sqlite3",
+        _config(tmp_path),
+        http_transport=httpx.MockTransport(handler),
+        replay=SimpleNamespace(lookup=lookup_fixture),
+    )
+    turn = service.start(
+        service.store.new_session(),
+        "What did Microsoft announce in its FY2024 earnings release, and how much did revenue grow?",
+        "live",
+        cutoff=datetime(2025, 1, 1, 15, tzinfo=UTC),
+    )
+    asyncio.run(service.execute(turn))
+    result = service.view(turn)
+    assert result["status"] == "Complete"
+    assert "15.67%" in result["report"]["conclusion"]
+    assert any(e["kind"] == "validation" and e["outcome"] == "retry" for e in result["events"])
+
+
 def test_live_clarification_keeps_answers_from_earlier_rounds_after_restart(tmp_path):
     from financial_research.fixtures import lookup_fixture, parse_fixture
 
@@ -422,6 +518,33 @@ def test_invalid_live_plan_does_not_execute_any_provider_action(tmp_path):
     assert "failed validation" in item["error"]
     assert item["counts"]["lookups"] == 0
     assert item["counts"]["models"] == 2
+
+
+def test_two_quarter_margins_share_an_approved_financial_lookup():
+    from datetime import date
+
+    from financial_research.domain import Claim, Period, Plan
+    from financial_research.planning import candidates, validate_plan
+
+    periods = [Period(year=year, quarter=2) for year in (2025, 2024)]
+    claims = [
+        Claim(
+            id=f"margin-{period.year}",
+            label=f"Microsoft operating margin in {period.label}",
+            kind="financial",
+            entities=["MSFT"],
+            period=period,
+            metric="operating_income",
+            measure="margin",
+        )
+        for period in periods
+    ]
+    choices = candidates(claims, date(2025, 2, 1))
+    combined = choices[0].model_copy(update={"periods": periods, "claim_ids": [claim.id for claim in claims]})
+    assert validate_plan(Plan(actions=[combined]), choices, claims, followup=False).actions == [combined]
+    unauthorized = combined.model_copy(update={"periods": [*periods, Period(year=2025, quarter=3)]})
+    with pytest.raises(ValueError, match="outside the approved"):
+        validate_plan(Plan(actions=[unauthorized]), choices, claims, followup=False)
 
 
 def test_retry_and_provider_failure_preserve_confirmed_finding(tmp_path):

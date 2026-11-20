@@ -81,13 +81,56 @@ class Store:
             connection.close()
 
     def new_session(self) -> str:
-        session = uuid4().hex
         with self.connect() as conn:
-            conn.execute(
-                "INSERT INTO sessions VALUES (?, ?, ?)", (session, utc_now().isoformat(), "New session")
-            )
+            session = self._insert_session(conn)
             self._select(conn, session, None)
         return session
+
+    def _insert_session(self, conn):
+        session = uuid4().hex
+        conn.execute("INSERT INTO sessions VALUES (?, ?, ?)", (session, utc_now().isoformat(), "New session"))
+        return session
+
+    def delete_session(self, session: str, checkpoints: Path):
+        with self.connect() as conn:
+            attached = checkpoints.is_file()
+            if attached:
+                conn.execute("ATTACH DATABASE ? AS graph_state", (str(checkpoints),))
+            conn.execute("BEGIN IMMEDIATE")
+            if not conn.execute("SELECT 1 FROM sessions WHERE id = ?", (session,)).fetchone():
+                raise ValueError("This session is no longer available.")
+            if conn.execute(
+                "SELECT 1 FROM turns WHERE session_id = ? AND status IN ('Queued', 'Running')",
+                (session,),
+            ).fetchone():
+                raise ValueError("Wait for the active investigation to finish before deleting this session.")
+
+            selected = conn.execute("SELECT session_id FROM selection WHERE slot = 1").fetchone()
+            if selected and selected["session_id"] == session:
+                replacement = conn.execute(
+                    "SELECT id FROM sessions WHERE id <> ? ORDER BY created_at DESC LIMIT 1", (session,)
+                ).fetchone()
+                next_session = replacement["id"] if replacement else self._insert_session(conn)
+                latest = conn.execute(
+                    "SELECT id FROM turns WHERE session_id = ? ORDER BY created_at DESC LIMIT 1",
+                    (next_session,),
+                ).fetchone()
+                self._select(conn, next_session, latest["id"] if latest else None)
+
+            session_runs = "SELECT run_id FROM turns WHERE session_id = ?"
+            if attached:
+                # Both LangGraph SQLite tables store the corresponding run ID as thread_id.
+                for table in ("writes", "checkpoints"):
+                    if conn.execute(
+                        "SELECT 1 FROM graph_state.sqlite_schema WHERE type = 'table' AND name = ?", (table,)
+                    ).fetchone():
+                        conn.execute(
+                            f"DELETE FROM graph_state.{table} WHERE thread_id IN ({session_runs})", (session,)
+                        )
+            conn.execute(f"DELETE FROM events WHERE run_id IN ({session_runs})", (session,))
+            conn.execute("DELETE FROM lookups WHERE session_id = ?", (session,))
+            conn.execute("DELETE FROM turns WHERE session_id = ?", (session,))
+            conn.execute("DELETE FROM sessions WHERE id = ?", (session,))
 
     def _select(self, conn, session_id, turn_id):
         conn.execute(

@@ -95,6 +95,9 @@ function header(data, state) {
 
 function sidebar(data, state) {
     const active = data.selection;
+    const running = data.turns.some(item => ["Queued", "Running"].includes(item.status));
+    const confirming = state.deleteSession === active.session_id;
+    const sessionTitle = data.sessions.find(item => item.id === active.session_id)?.title;
     return node("aside", {class: "session-sidebar", "aria-label": "Session history", "data-expanded": String(state.sessions)},
         node("div", {class: "sidebar-bar"}, node("h2", {}, "Research sessions"),
             button("Sessions", "sessions", null, {class: "secondary mobile-sessions",
@@ -103,8 +106,22 @@ function sidebar(data, state) {
             button("", "new", null, {class: "secondary new-session", "aria-label": "New session"},
                 node("span", {"aria-hidden": "true"}, "+"), "New session"),
             node("nav", {class: "session-list", "aria-label": "Research sessions"},
-                data.sessions.map(item => button(item.title === "New session" ? "Untitled session" : item.title, "session", item.id,
-                    {"aria-current": String(active.session_id === item.id)}))),
+                data.sessions.map(item => {
+                    const selected = active.session_id === item.id;
+                    return node("div", {class: "session-card"},
+                        button(item.title === "New session" ? "Untitled session" : item.title, "session", item.id,
+                            {class: "session-title", "aria-current": String(selected)}),
+                        selected && button("×", "confirm_delete", item.id,
+                            {class: "session-delete-icon", "aria-label": "Delete session",
+                                "aria-expanded": String(confirming), disabled: running || Boolean(state.pending),
+                                title: running ? "Wait for the active investigation to finish" : "Delete session"}));
+                })),
+            confirming && node("div", {class: "delete-confirmation", role: "group", "aria-label": "Confirm session deletion"},
+                node("p", {}, `Delete “${sessionTitle === "New session" ? "Untitled session" : sessionTitle}” and all its investigations? This cannot be undone.`),
+                node("div", {class: "delete-actions"},
+                    button("Cancel", "cancel_delete", active.session_id, {class: "secondary"}),
+                    button("Delete permanently", "delete_session", active.session_id,
+                        {class: "secondary delete-session", disabled: running || Boolean(state.pending)}))),
             node("section", {"aria-labelledby": "session-questions"},
                 node("h3", {class: "eyebrow sidebar-title", id: "session-questions"}, "Session questions"),
                 data.turns.length === 0 && node("p", {class: "session-empty"}, "Investigations appear here."),
@@ -236,7 +253,7 @@ function reportPanel(turn, state) {
     ];
 }
 
-function stagePanel(turn, state, stage, event) {
+function stagePanel(turn, state, stage, event, running) {
     if (!turn) return heading("Research workspace", "Start an investigation",
         "Ask a question above or choose an example to inspect a research workflow.");
     if (event && event.kind !== "stage") {
@@ -245,9 +262,16 @@ function stagePanel(turn, state, stage, event) {
     }
     if (stage === "Parse" && turn.status === "Waiting for clarification") return clarification(turn, state);
     if (stage === "Report" && turn.report) return reportPanel(turn, state);
+    if (running) return [
+        heading("Investigation workflow", stage, null, turn.status),
+        node("div", {class: "stage-progress"},
+            node("span", {class: "stage-pulse", "aria-hidden": "true"}),
+            node("span", {}, "Stage in progress"),
+            node("span", {class: "stage-clock", role: "timer", "data-started-at": event.timestamp})),
+    ];
     if (event?.outcome === "started") {
         return heading("Investigation workflow", stage,
-            turn.status === "Interrupted" ? "The app closed while this stage was running." : "Stage in progress",
+            turn.status === "Interrupted" ? "The app closed while this stage was running." : "Stage started",
             turn.status);
     }
     if (event?.outcome === "error" || turn.error && !event) {
@@ -310,6 +334,7 @@ function runPanel(turn, state) {
 }
 
 function render(root, data, state) {
+    clearInterval(state.stageClock);
     const focused = root.getRootNode().activeElement;
     const focusKey = focused?.getAttribute("data-focus");
     const turn = data.selected;
@@ -319,6 +344,7 @@ function render(root, data, state) {
     const stage = selectedEvent?.stage || state.stage || (turn?.report ? "Report" : newest?.stage) || "Parse";
     const event = selectedEvent || events.findLast(item => item.stage === stage && item.kind === "stage");
     const status = turn?.status || "Ready";
+    const running = status === "Running" && newest?.outcome === "started" && event === newest;
     root.replaceChildren(header(data, state), node("main", {class: "shell workspace"},
         sidebar(data, state),
         node("div", {class: "workflow-main"},
@@ -335,7 +361,22 @@ function render(root, data, state) {
                         node("span", {}, item))))),
             node("div", {class: "layout"},
                 node("section", {class: "panel panel-main", "aria-labelledby": "stage-title", tabindex: -1},
-                    stagePanel(turn, state, stage, event)), runPanel(turn, state)))));
+                    stagePanel(turn, state, stage, event, running)), runPanel(turn, state)))));
+    const clock = root.querySelector(".stage-clock");
+    if (clock) {
+        const started = Date.parse(clock.dataset.startedAt);
+        const tick = () => {
+            if (!clock.isConnected) {
+                clearInterval(state.stageClock);
+                return;
+            }
+            const seconds = Math.max(0, Math.floor((Date.now() - started) / 1000));
+            const elapsed = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} elapsed`;
+            if (clock.textContent !== elapsed) clock.textContent = elapsed;
+        };
+        tick();
+        state.stageClock = setInterval(tick, 250);
+    }
     if (focusKey) {
         const replacement = root.querySelector("[data-focus=" + CSS.escape(focusKey) + "]");
         if (replacement && replacement !== document.activeElement) replacement.focus({preventScroll: true});
@@ -358,6 +399,7 @@ export default function workspace({parentElement, data, setTriggerValue}) {
     if (state.key !== key) {
         state.key = key;
         if (state.pending === data.acknowledged) state.pending = null;
+        if (state.deleteSession !== data.selection.session_id) state.deleteSession = null;
         if (state.turn !== data.selected?.id) {
             state.turn = data.selected?.id;
             state.stage = null;
@@ -387,12 +429,18 @@ export default function workspace({parentElement, data, setTriggerValue}) {
         } else if (action === "sessions") {
             state.sessions = !state.sessions;
             render(root, data, state);
+        } else if (action === "confirm_delete" || action === "cancel_delete") {
+            state.deleteSession = action === "confirm_delete" ? value : null;
+            render(root, data, state);
+            root.querySelector(`[data-action="${state.deleteSession ? "cancel_delete" : "confirm_delete"}"]`)
+                ?.focus();
         } else if (action === "stage" || action === "history") {
             state.stage = action === "stage" ? value : null;
             state.event = action === "history" ? Number(value) : null;
             render(root, data, state);
         } else {
             if (action === "new") state.draft = "";
+            if (action === "delete_session") state.deleteSession = null;
             send(action, {id: value});
         }
     };

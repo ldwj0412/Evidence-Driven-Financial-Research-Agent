@@ -194,13 +194,16 @@ class Parsed(Record):
         return self
 
 
+MAX_ACTION_PERIODS = 8
+
+
 class Action(Record):
     source: Source
     operation: Operation
     claim_ids: list[str] = Field(min_length=1, max_length=8)
     purpose: str = Field(min_length=1, max_length=240)
     entity: Ticker | None = None
-    periods: list[Period] = Field(default_factory=list, max_length=8)
+    periods: list[Period] = Field(default_factory=list, max_length=MAX_ACTION_PERIODS)
     series: Series | None = None
     start: date | None = None
     end: date | None = None

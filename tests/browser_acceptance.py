@@ -78,6 +78,34 @@ def main():
         page.get_by_role("combobox", name="Profit metric", exact=True).select_option("operating_income")
         page.get_by_role("button", name="Resume investigation").click()
         expect(page.get_by_role("heading", name="Conclusion", exact=True)).to_be_visible(timeout=10000)
+
+        page.set_viewport_size({"width": 390, "height": 844})
+        if sessions.get_attribute("aria-expanded") == "false":
+            sessions.click()
+        session_list = page.get_by_role("navigation", name="Research sessions")
+        selected_session = session_list.locator("button[aria-current=true]")
+        title = selected_session.inner_text()
+        remove = session_list.get_by_role("button", name="Delete session", exact=True)
+        expect(remove).to_have_text("×")
+        card_box = selected_session.bounding_box()
+        icon_box = remove.bounding_box()
+        assert icon_box["y"] - card_box["y"] <= 6
+        assert card_box["x"] + card_box["width"] - (icon_box["x"] + icon_box["width"]) <= 6
+        remove.focus()
+        page.keyboard.press("Enter")
+        confirmation = page.get_by_role("group", name="Confirm session deletion")
+        expect(confirmation).to_contain_text(title)
+        expect(confirmation.get_by_role("button", name="Cancel")).to_be_focused()
+        page.keyboard.press("Enter")
+        expect(confirmation).to_have_count(0)
+        expect(session_list.get_by_role("button", name=title, exact=True)).to_be_visible()
+
+        remove.click()
+        confirmation.get_by_role("button", name="Delete permanently").click()
+        expect(session_list.get_by_role("button", name=title, exact=True)).to_have_count(0)
+        page.reload()
+        sessions.click()
+        expect(session_list.get_by_role("button", name=title, exact=True)).to_have_count(0)
         browser.close()
     print("Browser acceptance passed.")
 

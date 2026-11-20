@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import logging
+import sqlite3
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -22,6 +23,7 @@ from .planning import (
     PLAN_PROMPT,
     asks_for_as_of,
     candidates,
+    clarification_asks_for_figures,
     explicit_financial_claim,
     fixture_plan,
     parameters,
@@ -108,6 +110,14 @@ class ResearchService:
             raise ValueError("Select Live or Fixture replay.")
         question = self.settings.redact(question.strip())
         return self.store.create_turn(session, question, mode, parent, cutoff or utc_now())
+
+    def delete_session(self, session: str):
+        try:
+            self.store.delete_session(session, self.checkpoints)
+        except sqlite3.OperationalError as exc:
+            raise ValueError(
+                "Could not delete this session. Try again when the database is available."
+            ) from exc
 
     def view(self, turn):
         item = self.store.turn(turn)
@@ -321,18 +331,27 @@ class Investigation:
                     "Parse did not preserve the company, metric, or fiscal period in the question."
                 )
             return Parsed(claims=[claim])
-        return await self.router.ask(
+        context = {
+            "question": question,
+            "prior_resolved_context": state.get("prior"),
+            "clarification_answers": state.get("answers"),
+            "run_started": state["cutoff"],
+            "rules": {"basis_default": "reported", "scope_default": "consolidated"},
+        }
+        parsed = await self.router.ask(Parsed, "Parse", PARSE_PROMPT, context)
+        if not clarification_asks_for_figures(parsed.clarification):
+            return parsed
+        message = "The parser asked for figures that retrieval should supply."
+        self.emit("validation", "retry", {"message": message})
+        repaired = await self.router.ask(
             Parsed,
             "Parse",
-            PARSE_PROMPT,
-            {
-                "question": question,
-                "prior_resolved_context": state.get("prior"),
-                "clarification_answers": state.get("answers"),
-                "run_started": state["cutoff"],
-                "rules": {"basis_default": "reported", "scope_default": "consolidated"},
-            },
+            PARSE_PROMPT + "\n" + message + " Resolve the requested claims without asking for those figures.",
+            context,
         )
+        if clarification_asks_for_figures(repaired.clarification):
+            raise ProviderError(message)
+        return repaired
 
     async def parse(self, state):
         self.begin("Parse")

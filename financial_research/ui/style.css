@@ -43,19 +43,32 @@ a { color: var(--green); text-underline-offset: 3px; }
 .sidebar-title { margin: 0 4px 5px; }
 .mobile-sessions { display: none; }
 .session-list, .session-turns { display: grid; gap: 3px; }
-.session-list button, .session-turns button {
+.session-card { position: relative; }
+.session-title, .session-turns button {
   width: 100%; padding: 7px 9px; border: 1px solid transparent; border-radius: 7px;
   text-align: left; background: transparent; color: var(--ink); overflow-wrap: anywhere;
 }
-.session-list button { font-size: .87rem; font-weight: 650; }
-.session-list button:hover, .session-turns button:hover { background: #e6eee2; }
-.session-list button[aria-current="true"], .session-turns button[aria-current="true"] {
+.session-title { font-size: .87rem; font-weight: 650; }
+.session-title:hover, .session-turns button:hover { background: #e6eee2; }
+.session-title[aria-current="true"], .session-turns button[aria-current="true"] {
   border-color: #c5d7c2; background: #deeade; color: #183d2e;
 }
+.session-title[aria-current="true"] { padding-right: 40px; }
+.session-delete-icon {
+  position: absolute; top: 3px; right: 3px; display: grid; place-items: center;
+  width: 30px; height: 28px; padding: 0; border: 0; border-radius: 5px;
+  color: var(--red); background: transparent; font-size: 1.3rem; line-height: 1;
+}
+.session-delete-icon:not(:disabled):hover { background: var(--red-wash); }
 .session-turns button { font-size: .83rem; }
 .session-turns button span { display: block; color: var(--muted); font-size: .73rem; }
 .session-list button:disabled, .session-turns button:disabled { cursor: default; opacity: .65; }
 .session-empty { color: var(--muted); font-size: .82rem; margin: 5px 4px 0; }
+.sidebar-menu .delete-session { color: var(--red); align-self: flex-start; }
+.sidebar-menu .delete-session:hover { background: var(--red-wash); border-color: var(--red); }
+.delete-confirmation { display: grid; gap: 8px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; }
+.delete-confirmation p { font-size: .84rem; overflow-wrap: anywhere; }
+.delete-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .storage-note { margin: auto 4px 0; color: var(--muted); font-size: .75rem; }
 .shell { width: min(1280px, calc(100% - 64px)); margin: 0 auto; }
 .masthead {
@@ -120,6 +133,19 @@ a { color: var(--green); text-underline-offset: 3px; }
 .status.warning { background: var(--amber-wash); color: var(--amber); }
 .status.negative { background: var(--red-wash); color: var(--red); }
 .status.neutral { color: var(--muted); background: #eeefe9; }
+.stage-progress {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px;
+  font-size: .87rem; color: var(--green);
+}
+.stage-pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.stage-clock { color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: no-preference) {
+  .stage-pulse { animation: stage-pulse 1.5s ease-out infinite; }
+}
+@keyframes stage-pulse {
+  from { box-shadow: 0 0 0 0 currentColor; }
+  to { box-shadow: 0 0 0 5px transparent; }
+}
 .steps {
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px;
   border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--line);
