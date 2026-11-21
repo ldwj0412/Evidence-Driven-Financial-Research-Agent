@@ -1,7 +1,11 @@
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from financial_research.domain import Claim, Document, Fact, Period
+import pytest
+
+from financial_research.domain import Claim, Document, Fact, Parsed, Period
+from financial_research.planning import candidates
+from financial_research.reporting import report_content
 from financial_research.verification import render_number, verify
 
 
@@ -47,6 +51,77 @@ def test_reference_growth_acceleration_uses_unrounded_operands():
         "8.79 pp",
     ]
     assert findings[0].calculations[-1].evidence_ids == [item.id for item in evidence]
+
+
+@pytest.mark.parametrize("measure, years", [("growth", [2024]), ("acceleration", [2023, 2024])])
+def test_constant_currency_growth_uses_disclosed_rates(measure, years):
+    claim = Claim(
+        id="c1",
+        label="Constant-currency revenue growth",
+        kind="financial",
+        entities=["MSFT"],
+        metric="revenue",
+        period=Period(year=2024),
+        measure=measure,
+        basis="constant currency",
+    )
+    releases = [
+        Document(
+            id=f"release-{year}",
+            source="sec",
+            entity="MSFT",
+            title="Annual earnings release",
+            form="8-K exhibit",
+            url=f"https://www.sec.gov/Archives/example-{year}",
+            published=date(year, 7, 30),
+            retrieved_at=datetime(2024, 7, 30, 23, tzinfo=UTC),
+            period=Period(year=year),
+            passages=[f"Revenue increased {reported}% (up {adjusted}% in constant currency)."],
+        )
+        for year, reported, adjusted in [(2023, 7, 11), (2024, 16, 15)]
+    ]
+    positive = releases[-1]
+    reported_only = [
+        annual("revenue", 2024, 245122),
+        positive.model_copy(update={"passages": ["Total revenue increased 16% as reported."]}),
+        positive.model_copy(update={"passages": ["Azure revenue grew 30% in constant currency."]}),
+        positive.model_copy(update={"passages": ["Revenue is expected to grow 20% in constant currency."]}),
+        positive.model_copy(update={"period": Period(year=2024, quarter=4)}),
+    ]
+    findings, gaps = verify([claim], reported_only)
+    assert findings[0].verdict == "Unresolved"
+    assert gaps[0].operation == "release"
+    for choices in (candidates([claim], date(2024, 7, 30)), candidates([claim], date(2024, 7, 30), gaps)):
+        assert [(item.operation, item.periods[0].year) for item in choices] == [
+            ("release", year) for year in years
+        ]
+    findings, gaps = verify([claim], releases + reported_only)
+    assert not gaps
+    result = findings[0].calculations[-1]
+    assert findings[0].verdict == "Supported"
+    expected = (Decimal(4), "pp") if measure == "acceleration" else (Decimal(15), "%")
+    assert (result.result, result.unit) == expected
+    assert result.evidence_ids == [f"release-{year}" for year in years]
+    assert [check.evidence_ids for check in findings[0].checks if check.excerpt] == [
+        [f"release-{year}"] for year in years
+    ]
+    if measure == "acceleration":
+        causal = claim.model_copy(
+            update={"id": "cause", "kind": "causal", "event": "U.S. rates caused revenue acceleration"}
+        )
+        findings, _ = verify([claim, causal], releases)
+        assert [finding.verdict for finding in findings] == ["Supported", "Unresolved"]
+        report = report_content(
+            Parsed(claims=[claim, causal]), findings, releases, [], "Did growth accelerate because of rates?"
+        )
+        answer = next(item for item in report["answers"] if item["verdict"] == "Supported")
+        assert "from 11% in FY2023 to 15% in FY2024" in answer["text"]
+        assert "about 4 percentage points" in answer["text"]
+        assert answer["evidence_ids"] == ["release-2023", "release-2024"]
+    ambiguous = positive.model_copy(
+        update={"passages": [*positive.passages, "Revenue grew 13% in constant currency."]}
+    )
+    assert verify([claim], [releases[0], ambiguous])[0][0].verdict == "Unresolved"
 
 
 def test_negative_growth_baseline_is_unresolved():

@@ -14,6 +14,7 @@ from .verification import (
     required_periods,
     resolve_period,
     unsummarized_disclosures,
+    uses_disclosed_growth,
     valid_attributions,
 )
 
@@ -180,6 +181,28 @@ def _financial_answer(claim, finding, evidence, question):
     scope = f" ({', '.join(qualifiers)})" if qualifiers else ""
     prefix = _answer_prefix(claim, finding, question)
     item = finding.calculations[-1]
+    if uses_disclosed_growth(claim):
+
+        def rate(operand):
+            digits = max(0, -operand.value.as_tuple().exponent)
+            return render_number(operand.value, "%", digits)
+
+        topic = f"{COMPANIES[ticker][0]}’s {METRICS[claim.metric].lower()} growth in constant currency"
+        if claim.measure == "growth":
+            return f"{prefix}{topic} was {rate(item.operands[0])} in {period.label}."
+        prior, current = item.operands
+        prior_period = Period(year=period.year - 1, quarter=period.quarter)
+        if not item.result:
+            return (
+                f"{prefix}{topic} held steady at {rate(current)} in {prior_period.label} and {period.label}."
+            )
+        direction = "accelerated" if item.result > 0 else "slowed"
+        points = abs(item.result)
+        change = f"{points:f} percentage point" + ("s" if points != 1 else "")
+        return (
+            f"{prefix}{topic} {direction} by about {change}, "
+            f"from {rate(prior)} in {prior_period.label} to {rate(current)} in {period.label}."
+        )
     if claim.measure == "acceleration":
         outcome = "accelerated" if item.result > 0 else "slowed" if item.result < 0 else "held steady"
         magnitude = f" by {_readable_amount(abs(item.result), item.unit)}" if item.result else ""

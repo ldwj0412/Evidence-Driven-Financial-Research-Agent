@@ -121,7 +121,7 @@ def resolve_period(claim, facts):
     return None
 
 
-def financial_calculations(claim, evidence):
+def financial_calculations(claim, evidence, *, checks=None):
     current = resolve_period(claim, evidence)
     if not current:
         return [], "No eligible fiscal period was found before the cutoff."
@@ -133,6 +133,8 @@ def financial_calculations(claim, evidence):
         return [], "Year-over-year growth requires consecutive years and the same fiscal quarter."
     if claim.measure == "acceleration" and claim.comparison_period and claim.comparison_period != periods[1]:
         return [], "Growth acceleration compares the current year-over-year growth with the prior year's."
+    if uses_disclosed_growth(claim):
+        return disclosed_growth_calculations(claim, periods[1:], evidence, checks)
     results = []
     for entity in claim.entities:
         items = [
@@ -272,6 +274,7 @@ _GROWTH = re.compile(
     r"\b(growth|grew|up|down|increase\w*|decrease\w*|declin\w*|change\w*|rose|fell)\b",
     re.IGNORECASE,
 )
+_OUTLOOK = re.compile(r"\b(?:expect\w*|forecast\w*|project\w*|guidance|outlook|will|would)\b", re.IGNORECASE)
 
 
 def conflict_figures(claim):
@@ -283,7 +286,7 @@ def conflict_figures(claim):
 
 
 def _basis(text):
-    if re.search(r"constant.currency|exclud\w*.{0,85}foreign exchange", text, re.IGNORECASE):
+    if re.search(r"\bconstant[\s-]+currenc(?:y|ies)\b|exclud\w*.{0,85}foreign exchange", text, re.IGNORECASE):
         return "in constant currency"
     if re.search(r"non.gaap|adjusted", text, re.IGNORECASE):
         return "on an adjusted basis"
@@ -292,41 +295,59 @@ def _basis(text):
     return None
 
 
+def uses_disclosed_growth(claim):
+    return (
+        claim.kind == "financial"
+        and claim.measure in {"growth", "acceleration"}
+        and _basis(claim.basis) == "in constant currency"
+    )
+
+
 def _quoted_value_matches(figure, amount):
     scale = _SCALE[figure.scale]
     precision = Decimal(1).scaleb(figure.value.as_tuple().exponent)
     return (amount / scale).quantize(precision, rounding=ROUND_HALF_UP) == figure.value
 
 
-def measure_disclosures(claim, figure, evidence):
-    """Require the metric to be the subject of the reported measurement."""
-    records = {}
+def _measure_disclosures(
+    entity, period, scope, metric_name, unit, measure, evidence, *, growth_release=False
+):
+    """Read measurements that name the metric as their subject."""
+    pattern = (
+        _RATE
+        if unit == "%" and measure == "growth"
+        else (_MONEY if unit in {"USD", "USD/share"} and measure == "value" else None)
+    )
+    if not pattern:
+        return
     for document in evidence:
         if (
             not isinstance(document, Document)
-            or document.entity != claim.entities[0]
-            or document.period != (figure.period or claim.period)
+            or document.entity != entity
+            or document.period != period
             or document.source != "sec"
+            or growth_release
+            and (
+                not document.published
+                or not re.fullmatch(r"8-K(?:/A)? exhibit(?: 99\.1)?", document.form or "")
+            )
         ):
             continue
         for passage in document.passages:
             text = passage.lstrip(" •–-·")
-            metric = re.search(_METRIC_WORDS[claim.metric], text, re.IGNORECASE)
+            metric = re.search(_METRIC_WORDS[metric_name], text, re.IGNORECASE)
             if not metric:
                 continue
             prefix = text[: metric.start()].strip()
-            if figure.scope == "consolidated":
+            if scope == "consolidated":
                 if prefix and not _SUBJECT.fullmatch(prefix + " "):
                     continue
-            elif not re.fullmatch(re.escape(figure.scope) + r"(?: segment)?", prefix, re.IGNORECASE):
+            elif not re.fullmatch(re.escape(scope) + r"(?: segment)?", prefix, re.IGNORECASE):
                 continue
             remainder = text[metric.end() :]
-            pattern = (
-                _RATE
-                if figure.unit == "%" and figure.measure == "growth"
-                else (_MONEY if figure.unit in {"USD", "USD/share"} and figure.measure == "value" else None)
-            )
-            if not pattern or "respectively" in remainder.lower():
+            if growth_release:
+                remainder = re.split(r"(?<=[.!?])\s+", remainder, maxsplit=1)[0]
+            if "respectively" in remainder.lower() or growth_release and _OUTLOOK.search(remainder):
                 continue
             previous = 0
             for index, match in enumerate(pattern.finditer(remainder)):
@@ -341,25 +362,97 @@ def measure_disclosures(claim, figure, evidence):
                 if any(
                     re.search(words, left, re.IGNORECASE)
                     for name, words in _METRIC_WORDS.items()
-                    if name != claim.metric
+                    if name != metric_name
                 ):
                     break
                 if pattern == _RATE and not (_GROWTH.search(left) or index and _basis(right)):
                     continue
                 basis = _basis(right) or _basis(left) or (index == 0 and (_basis(prefix) or "as reported"))
-                if not basis or (figure.basis and (_basis(figure.basis) or figure.basis) != basis):
+                if not basis:
                     continue
                 value = Decimal(match[1].replace(",", ""))
                 if pattern == _MONEY:
                     value *= _SCALE[(match[2] or "one").lower()]
                 if re.search(r"(?:down|decreased|declined|fell)\s*(?:by\s*)?$", left, re.IGNORECASE):
                     value = -abs(value)
-                if _quoted_value_matches(figure, value):
-                    index = metric.end() + match.start()
-                    start, end = max(0, index - 160), min(len(text), index + 200)
-                    excerpt = ("…" if start else "") + text[start:end] + ("…" if end < len(text) else "")
-                    records[basis] = (document.id, excerpt)
-    return records
+                offset = metric.end() + match.start()
+                start, end = max(0, offset - 160), min(len(text), offset + 200)
+                excerpt = ("…" if start else "") + text[start:end] + ("…" if end < len(text) else "")
+                yield basis, value, document, excerpt
+
+
+def measure_disclosures(claim, figure, evidence):
+    requested_basis = _basis(figure.basis) or figure.basis if figure.basis else None
+    return {
+        basis: (document.id, excerpt)
+        for basis, value, document, excerpt in _measure_disclosures(
+            claim.entities[0],
+            figure.period or claim.period,
+            figure.scope,
+            claim.metric,
+            figure.unit,
+            figure.measure,
+            evidence,
+        )
+        if (not requested_basis or requested_basis == basis) and _quoted_value_matches(figure, value)
+    }
+
+
+def disclosed_growth_calculations(claim, periods, evidence, checks):
+    results = []
+    for entity in claim.entities:
+        operands = []
+        for period in periods:
+            rates = {}
+            for basis, value, document, excerpt in _measure_disclosures(
+                entity, period, claim.scope, claim.metric, "%", "growth", evidence, growth_release=True
+            ):
+                if basis == "in constant currency":
+                    rates.setdefault(value, {})[document.id] = excerpt
+            if not rates:
+                return (
+                    results,
+                    f"Missing a disclosed constant-currency growth rate for {entity} {period.label}.",
+                )
+            if len(rates) > 1:
+                return results, f"Multiple constant-currency growth rates matched {entity} {period.label}."
+            ((value, references),) = rates.items()
+            label = f"{entity} {period.label} constant-currency {METRICS[claim.metric].lower()} growth"
+            operand = Operand(label=label, value=value, unit="%", evidence_ids=sorted(references))
+            operands.append(operand)
+            if checks is not None:
+                first_ref = operand.evidence_ids[0]
+                checks.append(
+                    VerificationCheck(
+                        label=f"Match {period.label} constant-currency growth",
+                        detail=f"{claim.scope.capitalize()} {METRICS[claim.metric].lower()}, year over year.",
+                        evidence_ids=[first_ref],
+                        excerpt=references[first_ref],
+                    )
+                )
+            results.append(
+                Calculation(
+                    label=label,
+                    formula="Disclosed year-over-year growth rate",
+                    operands=[operand],
+                    result=value,
+                    unit="%",
+                    evidence_ids=operand.evidence_ids,
+                )
+            )
+        if claim.measure == "acceleration":
+            prior, current = operands
+            results.append(
+                Calculation(
+                    label=f"{current.label} acceleration",
+                    formula="Current disclosed YoY growth − prior disclosed YoY growth",
+                    operands=operands,
+                    result=current.value - prior.value,
+                    unit="pp",
+                    evidence_ids=list(dict.fromkeys(prior.evidence_ids + current.evidence_ids)),
+                )
+            )
+    return results, None
 
 
 def verify_conflict(claim, evidence):
@@ -789,7 +882,7 @@ def verify(
         checks = []
         if claim.kind in {"financial", "macro"}:
             calculations, problem = (
-                financial_calculations(claim, evidence)
+                financial_calculations(claim, evidence, checks=checks)
                 if claim.kind == "financial"
                 else verify_macro(claim, evidence)
             )
@@ -797,7 +890,9 @@ def verify(
                 verdict, reason = "Unresolved", problem
                 checks.append(VerificationCheck(label="Check required evidence", detail=problem))
                 operation = "observations" if claim.kind == "macro" else "filing"
-                if claim.kind == "financial" and claim.period and claim.period.quarter == 4:
+                if uses_disclosed_growth(claim) or (
+                    claim.kind == "financial" and claim.period and claim.period.quarter == 4
+                ):
                     operation = "release"
                 if problem.startswith(("Missing", "No eligible", "The margin needs")):
                     gap = Gap(claim_id=claim.id, operation=operation, reason=problem)

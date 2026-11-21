@@ -64,6 +64,7 @@ from .verification import (
     resolve_period,
     select_fact,
     unsummarized_disclosures,
+    uses_disclosed_growth,
     valid_attributions,
     verified_disclosure_summaries,
     verify,
@@ -429,11 +430,19 @@ class Investigation:
     def allowed_actions(self, state, parsed, followup):
         day = datetime.fromisoformat(state["cutoff"]).astimezone(EASTERN).date()
         gaps = [Gap.model_validate(item) for item in state.get("gaps", [])] if followup else None
-        eligible = candidates(parsed.claims, day, gaps)
+        claims = parsed.claims
         if followup:
+            if any(claim.latest and uses_disclosed_growth(claim) for claim in claims):
+                evidence = EVIDENCE.validate_python(state.get("evidence", []))
+                claims = [
+                    claim.model_copy(update={"period": resolve_period(claim, evidence)})
+                    if claim.latest and uses_disclosed_growth(claim)
+                    else claim
+                    for claim in claims
+                ]
             used = {repr(parameters(item)) for item in Plan.model_validate(state["plan"]).actions}
-            return [item for item in eligible if repr(parameters(item)) not in used]
-        return eligible
+            return [item for item in candidates(claims, day, gaps) if repr(parameters(item)) not in used]
+        return candidates(claims, day)
 
     async def plan(self, state):
         pass_no = int(bool(state.get("findings")))
