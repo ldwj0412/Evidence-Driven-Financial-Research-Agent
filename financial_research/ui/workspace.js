@@ -188,7 +188,9 @@ function sidebar(data, state) {
                 node("nav", {class: "session-turns", "aria-label": "Session questions"},
                     [...data.turns].reverse().map(item => button(item.question, "turn", item.id,
                         {"aria-current": String(active.turn_id === item.id)},
-                        node("span", {}, item.status + (item.mode === "replay" ? " · Replay" : ""),
+                        node("span", {class: "session-turn-meta"},
+                            item.is_follow_up && node("span", {class: "follow-up-label"}, "Follow-up"),
+                            item.status + (item.mode === "replay" ? " · Replay" : ""),
                             item.created_at && node("time", {datetime: item.created_at,
                                 title: cutoffTime.format(new Date(item.created_at))},
                                 shortTime.format(new Date(item.created_at)))))))
@@ -424,7 +426,9 @@ function reportPanel(turn, view) {
     const report = turn.report;
     const {citations, hasHighlights, highlights, quotes, records, showQuotes, summaries, synthesized} = view;
     return [
-        heading("Investigation report", "Conclusion",
+        heading(["Investigation report",
+            turn.parent_id && report.carried.length > 0 && node("span", {class: "follow-up-label"}, "Follow-up")],
+            "Conclusion",
             hasHighlights ? null : citedText(report.conclusion, report.evidence_ids, citations), report.overall, true),
         hasHighlights && report.answers.length > 0 && node("div", {class: "report-answers"},
             report.answers.map(item => node("div", {class: "report-answer", "data-verdict": item.verdict},

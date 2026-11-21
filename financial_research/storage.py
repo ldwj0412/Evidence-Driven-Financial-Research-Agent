@@ -165,7 +165,9 @@ class Store:
             return [
                 dict(row)
                 for row in conn.execute(
-                    "SELECT id, question, mode, status, created_at FROM turns "
+                    "SELECT id, question, mode, status, created_at, "
+                    "(parent_id IS NOT NULL AND COALESCE(json_array_length(data, '$.parsed.carried'), 0) > 0) "
+                    "AS is_follow_up FROM turns "
                     "WHERE session_id = ? ORDER BY created_at, rowid",
                     (session_id,),
                 )

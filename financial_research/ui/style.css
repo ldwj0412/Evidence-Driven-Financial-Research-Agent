@@ -84,7 +84,7 @@ a { color: var(--green); text-underline-offset: 3px; }
 }
 .session-delete-icon:not(:disabled):hover { background: var(--red-wash); }
 .session-turns button { font-size: .83rem; }
-.session-turns button span { display: block; color: var(--muted); font-size: .73rem; }
+.session-turn-meta { display: block; color: var(--muted); font-size: .73rem; }
 .session-turns time { display: inline-block; font-variant-numeric: tabular-nums; }
 .session-turns time::before { content: " · "; white-space: pre; }
 .session-list button:disabled, .session-turns button:disabled { cursor: default; opacity: .65; }
@@ -225,6 +225,13 @@ a { color: var(--green); text-underline-offset: 3px; }
 .panel-side { padding: 17px 19px; }
 .panel-topline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
 .eyebrow { color: var(--muted); font-size: .72rem; font-weight: 650; text-transform: uppercase; letter-spacing: .085em; }
+.panel-topline .eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.follow-up-label {
+  display: inline-block; padding: 2px 7px; border-radius: 5px;
+  color: #214f59; background: #dceef0; font: 650 .73rem/1.35 var(--sans);
+  letter-spacing: normal; text-transform: none; white-space: nowrap;
+}
+.session-turn-meta .follow-up-label { margin-inline-end: 5px; }
 .panel-main h2 { font-size: clamp(1.75rem, 3.2vw, 2.6rem); }
 .conclusion-divider { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .lede { margin-top: 8px; color: var(--muted); max-width: 68ch; }
