@@ -2,7 +2,9 @@ import os
 import re
 import tomllib
 from dataclasses import dataclass
+from ipaddress import ip_address
 from pathlib import Path
+from typing import Literal
 from urllib.parse import quote, quote_plus, urlsplit
 
 from pydantic import Field, SecretStr, ValidationError, field_validator
@@ -37,6 +39,52 @@ class RouterSettings(Credential):
         return value.rstrip("/")
 
 
+def is_loopback(host):
+    if host == "localhost":
+        return True
+    try:
+        return ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+class CompatibleSettings(Credential):
+    base_url: str = ""
+    model: str = Field(default="", pattern=r"^\S*$", max_length=240)
+    token_limit_parameter: Literal["max_completion_tokens", "max_tokens"] = "max_completion_tokens"
+
+    @field_validator("base_url")
+    @classmethod
+    def valid_endpoint(cls, value):
+        value = value.strip()
+        if not value:
+            return value
+        parts = urlsplit(value)
+        if (
+            not parts.hostname
+            or parts.username is not None
+            or parts.query
+            or parts.fragment
+            or any(char.isspace() or char == "\\" for char in value)
+            or parts.scheme != "https"
+            and not (parts.scheme == "http" and is_loopback(parts.hostname))
+        ):
+            raise ValueError("Use an HTTPS base URL or HTTP on loopback, without embedded credentials")
+        return value.rstrip("/")
+
+    @property
+    def ready(self):
+        return bool(
+            self.base_url
+            and self.model
+            and (self.api_key.get_secret_value() or is_loopback(urlsplit(self.base_url).hostname))
+        )
+
+
+class ModelSelection(Record):
+    provider: Literal["openrouter", "openai_compatible"] = "openrouter"
+
+
 class SecSettings(Record):
     user_agent: str = Field(default="", max_length=200)
 
@@ -51,15 +99,40 @@ class SecSettings(Record):
 
 @dataclass(frozen=True)
 class Settings:
+    model_provider: str | None
     openrouter: RouterSettings
+    openai_compatible: CompatibleSettings
     fred: Credential
     tavily: Credential
     sec: SecSettings
     messages: tuple[str, ...]
 
+    @property
+    def model_ready(self):
+        if self.model_provider == "openrouter":
+            return bool(self.openrouter.api_key.get_secret_value())
+        return self.model_provider == "openai_compatible" and self.openai_compatible.ready
+
+    @property
+    def model_error(self):
+        prefixes = {
+            "openrouter": "OpenRouter",
+            "openai_compatible": "OpenAI-compatible",
+            None: "Model provider",
+        }
+        return next(
+            (message for message in self.messages if message.startswith(prefixes[self.model_provider])),
+            "Configure the selected model provider in config.local.toml.",
+        )
+
     def redact(self, value):
         if isinstance(value, str):
-            for item in (self.openrouter.api_key, self.fred.api_key, self.tavily.api_key):
+            for item in (
+                self.openrouter.api_key,
+                self.openai_compatible.api_key,
+                self.fred.api_key,
+                self.tavily.api_key,
+            ):
                 secret = item.get_secret_value()
                 if secret:
                     for variant in {secret, quote(secret, safe=""), quote_plus(secret)}:
@@ -82,16 +155,29 @@ def load_config(path: Path) -> Settings:
     except (OSError, ValueError):
         content = {}
         messages.append("Read config.local.toml and fix its TOML syntax or file permissions.")
+    try:
+        model_provider = ModelSelection.model_validate(content.get("model", {})).provider
+    except ValidationError:
+        model_provider = None
+        messages.append("Model provider is invalid. Set [model] provider to openrouter or openai_compatible.")
     specs = (
         ("openrouter", "OpenRouter", RouterSettings, "api_key", "OPENROUTER_API_KEY"),
+        (
+            "openai_compatible",
+            "OpenAI-compatible",
+            CompatibleSettings,
+            "api_key",
+            "OPENAI_COMPATIBLE_API_KEY",
+        ),
         ("fred", "FRED", Credential, "api_key", "FRED_API_KEY"),
         ("tavily", "Tavily", Credential, "api_key", "TAVILY_API_KEY"),
         ("sec", "SEC EDGAR", SecSettings, "user_agent", "SEC_USER_AGENT"),
     )
-    if set(content) - {item[0] for item in specs}:
+    if set(content) - ({"model"} | {item[0] for item in specs}):
         messages.append("Use the provider sections listed in config.example.toml.")
     providers = {}
     for key, label, schema, credential, variable in specs:
+        active = key not in {"openrouter", "openai_compatible"} or key == model_provider
         section = content.get(key, {})
         if isinstance(section, dict):
             value = section.get(credential, "")
@@ -104,17 +190,24 @@ def load_config(path: Path) -> Settings:
         try:
             provider = schema.model_validate(section)
         except (ValidationError, ValueError):
-            messages.append(
-                f"{label} configuration is invalid. Check [{key}] in config.local.toml and {variable}."
-            )
+            if active:
+                messages.append(
+                    f"{label} configuration is invalid. Check [{key}] in config.local.toml and {variable}."
+                )
             provider = schema()
         else:
-            value = getattr(provider, credential)
-            if isinstance(value, SecretStr):
-                value = value.get_secret_value()
-            if not value:
+            if active and key == "openai_compatible" and not provider.ready:
                 messages.append(
-                    f"{label} is unavailable. Set {variable} or update {key}.{credential} in config.local.toml."
+                    "OpenAI-compatible is unavailable. Set base_url, model, and api_key in "
+                    "[openai_compatible]. Loopback endpoints can omit the API key."
                 )
+            elif active and key != "openai_compatible":
+                value = getattr(provider, credential)
+                if isinstance(value, SecretStr):
+                    value = value.get_secret_value()
+                if not value:
+                    messages.append(
+                        f"{label} is unavailable. Set {variable} or update {key}.{credential} in config.local.toml."
+                    )
         providers[key] = provider
-    return Settings(**providers, messages=tuple(messages))
+    return Settings(model_provider=model_provider, **providers, messages=tuple(messages))

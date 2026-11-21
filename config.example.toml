@@ -1,7 +1,18 @@
+[model]
+provider = "openrouter"
+
 [openrouter]
 api_key = ""
 base_url = "https://openrouter.ai/api/v1"
-model = "openai/gpt-5-mini"
+model = "openai/gpt-6-luna"
+
+# Select provider = "openai_compatible" above to use this section.
+[openai_compatible]
+api_key = ""
+base_url = ""
+model = ""
+# Use "max_tokens" if the endpoint uses the older parameter name.
+token_limit_parameter = "max_completion_tokens"
 
 [fred]
 api_key = ""

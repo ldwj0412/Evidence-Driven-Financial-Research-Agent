@@ -218,15 +218,31 @@ def _draft_from_payload(payload):
     return _model_response({"answers": context["answers"]})
 
 
+@pytest.mark.parametrize("provider", ["openrouter", "openai_compatible"])
 @pytest.mark.parametrize("company", ["MSFT", "AAPL"])
-def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company):
+def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company, provider, monkeypatch):
     from financial_research.fixtures import lookup_fixture
 
     schemas = []
+    config = _config(tmp_path)
+    host = "openrouter.ai"
+    if provider == "openai_compatible":
+        monkeypatch.delenv("OPENAI_COMPATIBLE_API_KEY", raising=False)
+        with config.open("a", encoding="utf-8") as stream:
+            stream.write(
+                '\n[model]\nprovider = "openai_compatible"\n[openai_compatible]\n'
+                'base_url = "http://127.0.0.1:8080/v1"\nmodel = "native-model"\n'
+                'token_limit_parameter = "max_tokens"\n'
+            )
+        host = "127.0.0.1"
 
     def handler(request):
-        assert request.url.host == "openrouter.ai"
+        assert request.url.host == host
         payload = json.loads(request.content)
+        if provider == "openai_compatible":
+            assert "Authorization" not in request.headers
+            assert "provider" not in payload
+            assert payload["max_tokens"] == 6500
         shape = payload["response_format"]["json_schema"]
         schemas.append(shape["name"])
         if shape["name"] == "ConclusionDraft":
@@ -246,7 +262,7 @@ def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company)
 
     service = ResearchService(
         tmp_path / "acceleration.sqlite3",
-        _config(tmp_path),
+        config,
         http_transport=httpx.MockTransport(handler),
         replay=SimpleNamespace(lookup=lookup_fixture),
     )

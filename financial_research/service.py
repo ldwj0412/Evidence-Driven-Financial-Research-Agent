@@ -48,9 +48,9 @@ from .providers import (
     INVESTIGATION_TIMEOUT_SECONDS,
     Budget,
     LiveProviders,
-    OpenRouter,
     ProviderError,
     Transport,
+    model_client,
 )
 from .reporting import report_content, validated_conclusion
 from .sec import EASTERN, date_end
@@ -272,7 +272,7 @@ class Investigation:
         self.replay = replay
         self.stage, self.pass_no = "Parse", 0
         transport = Transport(client, budget, self.emit, settings)
-        self.router = OpenRouter(transport, settings.openrouter)
+        self.router = model_client(transport) if self.mode == "live" and settings.model_ready else None
         self.providers = LiveProviders(transport)
 
     def emit(self, kind, outcome, data):
@@ -341,6 +341,8 @@ class Investigation:
         return "report"
 
     async def parse_live(self, state):
+        if self.router is None:
+            raise ProviderError(self.settings.model_error)
         question = state["question"]
         if (
             not state.get("answers")

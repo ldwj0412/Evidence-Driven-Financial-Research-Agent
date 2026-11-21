@@ -18,7 +18,7 @@ from pydantic import Field
 from .config import load_config
 from .domain import Attributions, Document, Fact, Parsed, Record, Verdict
 from .fixtures import PROMPTS
-from .providers import Budget, OpenRouter, ProviderError, Transport
+from .providers import Budget, ProviderError, Transport, model_client
 from .sec import EASTERN
 from .service import EVIDENCE, ROOT, ResearchService, available
 
@@ -270,7 +270,7 @@ async def _baseline(case, item, settings):
 
     try:
         async with httpx.AsyncClient(follow_redirects=False) as client:
-            router = OpenRouter(Transport(client, Budget(), emit, settings), settings.openrouter)
+            router = model_client(Transport(client, Budget(), emit, settings))
             result = await router.ask(
                 BaselineReply,
                 "baseline",
@@ -356,7 +356,7 @@ async def run_suite(mode, split, catalog, pool, config=None):
         "workflow": _metrics(workflow),
         "baseline": {"metrics": _metrics(baseline_counts), "runs": comparisons}
         if mode == "frozen"
-        else {"status": "requires a configured OpenRouter key; run with --mode frozen"},
+        else {"status": "requires a configured model provider; run with --mode frozen"},
         "active_timing": timings(active),
         "saved_read_timing": timings(cached_read),
         "runs": rows,
@@ -440,10 +440,8 @@ def main():
     parser.add_argument("--config", type=Path, default=ROOT / "config.local.toml")
     args = parser.parse_args()
     settings = load_config(args.config)
-    if args.mode != "replay" and not settings.openrouter.api_key.get_secret_value():
-        parser.error(
-            "Set OPENROUTER_API_KEY or openrouter.api_key in config.local.toml before running this evaluation."
-        )
+    if args.mode != "replay" and not settings.model_ready:
+        parser.error(settings.model_error)
     if args.mode == "live-smoke" and settings.messages:
         parser.error("Configure all providers for the six live smoke cases. " + " ".join(settings.messages))
     if args.mode == "live-smoke":

@@ -68,12 +68,8 @@ def handle(event, selection, selected):
         mode = st.session_state.mode
         if mode == "live":
             settings = service.settings
-            if not settings.openrouter.api_key.get_secret_value():
-                message = next(
-                    (item for item in settings.messages if item.startswith("OpenRouter")),
-                    "Configure OpenRouter.",
-                )
-                raise ValueError(message + " You can also choose Fixture replay.")
+            if not settings.model_ready:
+                raise ValueError(settings.model_error + " You can also choose Fixture replay.")
         parent = (
             selected["id"]
             if selected and selected["status"] == "Complete" and selected["mode"] == mode
@@ -91,7 +87,7 @@ def handle(event, selection, selected):
 
 
 if "mode" not in st.session_state:
-    st.session_state.mode = "live" if service.settings.openrouter.api_key.get_secret_value() else "replay"
+    st.session_state.mode = "live" if service.settings.model_ready else "replay"
 
 
 def in_progress(turn):

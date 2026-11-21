@@ -117,8 +117,8 @@ class Transport:
                             retry = status in self.RETRYABLE
                             if model and status in {400, 404, 422}:
                                 problem = (
-                                    "OpenRouter rejected the request. Check the model ID and its compatible "
-                                    "structured-output routes."
+                                    f"{tool} rejected the request (HTTP {status}). Check the endpoint, "
+                                    "model ID, and compatible strict JSON Schema support."
                                 )
                             elif status in {401, 403}:
                                 problem = f"{tool} denied access. Check the provider's local configuration."
@@ -183,28 +183,33 @@ def strict_schema(schema, *, portable=False):
     return normalized
 
 
-class OpenRouter:
+class OpenAICompatible:
+    label = "OpenAI-compatible"
+
     def __init__(self, transport, settings):
         self.transport, self.settings = transport, settings
 
+    @property
+    def portable_schema(self):
+        return False
+
+    def request_options(self):
+        return {self.settings.token_limit_parameter: 6500}
+
     async def ask(self, schema, purpose, system, data=None):
         key = self.settings.api_key.get_secret_value()
-        if not key:
-            raise ProviderError("Set OPENROUTER_API_KEY or openrouter.api_key in config.local.toml.")
         model = self.settings.model
-        qwen_plus = model == "qwen/qwen3.7-plus" or model.startswith("qwen/qwen3.7-plus-")
         result = await self.transport.json(
-            "OpenRouter Chat Completions",
+            f"{self.label} Chat Completions",
             "POST",
             self.settings.base_url + "/chat/completions",
-            headers={"Authorization": f"Bearer {key}"},
+            headers={"Authorization": f"Bearer {key}"} if key else None,
             purpose=purpose,
             timeout=MODEL_ATTEMPT_TIMEOUT_SECONDS,
             model=model,
             limit=1_500_000,
             payload={
                 "model": model,
-                "provider": {"require_parameters": True},
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": json.dumps(data or {}, ensure_ascii=False)},
@@ -214,11 +219,10 @@ class OpenRouter:
                     "json_schema": {
                         "name": schema.__name__,
                         "strict": True,
-                        "schema": strict_schema(schema.model_json_schema(), portable=qwen_plus),
+                        "schema": strict_schema(schema.model_json_schema(), portable=self.portable_schema),
                     },
                 },
-                "max_tokens": 6500,
-                **({"reasoning": {"enabled": False}} if qwen_plus else {}),
+                **self.request_options(),
             },
         )
         usage = result.get("usage") or {}
@@ -246,8 +250,37 @@ class OpenRouter:
             return schema.model_validate(decoded)
         except (AttributeError, IndexError, KeyError, TypeError, ValueError, ValidationError):
             raise ProviderError(
-                f"OpenRouter did not return valid {purpose} output. Check the selected model."
+                f"{self.label} did not return valid {purpose} output. Check the selected model."
             ) from None
+
+
+class OpenRouter(OpenAICompatible):
+    label = "OpenRouter"
+
+    @property
+    def portable_schema(self):
+        model = self.settings.model
+        return model == "qwen/qwen3.7-plus" or model.startswith("qwen/qwen3.7-plus-")
+
+    def request_options(self):
+        options = {"provider": {"require_parameters": True}, "max_tokens": 6500}
+        if self.portable_schema:
+            options["reasoning"] = {"enabled": False}
+        return options
+
+    async def ask(self, schema, purpose, system, data=None):
+        if not self.settings.api_key.get_secret_value():
+            raise ProviderError("Set OPENROUTER_API_KEY or openrouter.api_key in config.local.toml.")
+        return await super().ask(schema, purpose, system, data)
+
+
+def model_client(transport):
+    settings = transport.settings
+    if not settings.model_ready:
+        raise ProviderError(settings.model_error)
+    if settings.model_provider == "openrouter":
+        return OpenRouter(transport, settings.openrouter)
+    return OpenAICompatible(transport, settings.openai_compatible)
 
 
 def _day(value):

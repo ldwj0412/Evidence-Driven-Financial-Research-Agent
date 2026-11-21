@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import UTC, date, datetime
 
 import httpx
@@ -124,6 +125,68 @@ def test_openrouter_requires_structured_routing_and_redacts_errors(tmp_path):
 
     asyncio.run(run())
     assert "router-private" not in str(events)
+
+
+@pytest.mark.parametrize("valid", [True, False])
+def test_compatible_adapter_sends_only_chat_completions_fields(tmp_path, valid):
+    from financial_research.providers import model_client
+
+    config = tmp_path / "config.local.toml"
+    config.write_text(
+        '[model]\nprovider="openai_compatible"\n[openai_compatible]\n'
+        'api_key="compatible-private"\nbase_url="https://chat.example.com/v1/"\nmodel="native-model"'
+    )
+    settings = load_config(config)
+    assert settings.model_ready
+    assert settings.redact("compatible-private") == "[redacted]"
+    assert not any(message.startswith("OpenRouter") for message in settings.messages)
+
+    def handler(request):
+        assert str(request.url) == "https://chat.example.com/v1/chat/completions"
+        assert request.headers["Authorization"] == "Bearer compatible-private"
+        payload = json.loads(request.content)
+        assert payload["model"] == "native-model"
+        assert payload["max_completion_tokens"] == 6500
+        assert "provider" not in payload
+        assert "reasoning" not in payload
+        assert payload["response_format"]["json_schema"]["strict"]
+        content = {"out_of_scope": "Test fixture"} if valid else {"unexpected": "schema violation"}
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(content)}}]})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            adapter = model_client(Transport(client, Budget(3), lambda *_: None, settings))
+            if valid:
+                assert (await adapter.ask(Parsed, "Parse", "Question")).out_of_scope == "Test fixture"
+            else:
+                with pytest.raises(ProviderError, match="did not return valid Parse"):
+                    await adapter.ask(Parsed, "Parse", "Question")
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("url", "ready"),
+    [
+        ("http://127.0.0.1:8000/v1", True),
+        ("http://[::1]:8000/v1", True),
+        ("http://chat.example.com/v1", False),
+        ("https://chat.example.com/v1", False),
+    ],
+)
+def test_compatible_only_allows_keyless_or_http_endpoints_on_loopback(tmp_path, monkeypatch, url, ready):
+    monkeypatch.delenv("OPENAI_COMPATIBLE_API_KEY", raising=False)
+    config = tmp_path / "config.local.toml"
+    config.write_text(
+        f'[model]\nprovider="openai_compatible"\n[openai_compatible]\nbase_url="{url}"\nmodel="native-model"'
+    )
+    assert load_config(config).model_ready is ready
+
+
+def test_invalid_model_selection_does_not_fall_back_to_openrouter(tmp_path):
+    config = tmp_path / "config.local.toml"
+    config.write_text('[model]\nprovider="typo"\n[openrouter]\napi_key="router-private"')
+    assert not load_config(config).model_ready
 
 
 def test_recover_marks_active_runs_interrupted(tmp_path):
