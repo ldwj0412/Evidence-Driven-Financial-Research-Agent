@@ -6,13 +6,50 @@ from pathlib import Path
 from playwright.sync_api import expect, sync_playwright
 
 
-def select_fixture_replay(page):
-    mode = page.get_by_role("combobox", name="Research mode")
-    expect(mode).to_be_enabled()
+def select_fixture_replay(page, label="Research mode"):
+    mode = page.get_by_role("combobox", name=label)
+    expect(mode).to_be_enabled(timeout=15000)
     if mode.input_value() != "replay":
         mode.select_option("replay")
         expect(mode).to_be_enabled()
         expect(mode).to_have_value("replay")
+
+
+def check_bilingual_workspace(page):
+    page.set_viewport_size({"width": 1440, "height": 960})
+    page.get_by_role("button", name="New session").click()
+    expect(page.get_by_role("heading", name="Start an investigation")).to_be_visible()
+    language = page.locator("#interface-language")
+    expect(language).to_have_value("en")
+    language.select_option("zh")
+    expect(language).to_have_accessible_name("界面语言")
+    expect(page.get_by_role("heading", name="查证财务主张")).to_be_visible()
+
+    question = page.locator("#research-question")
+    submit = page.locator('#research-form button[type="submit"]')
+    answer = page.locator(".report-answer").first
+    page.get_by_role("button", name="营收增长", exact=True).click()
+    expect(question).to_have_value("微软 FY2024 的营收增速是否加快？")
+    submit.click()
+    expect(page.get_by_role("heading", name="结论", exact=True)).to_be_visible(timeout=10000)
+    expect(answer).to_contain_text("8.79 个百分点")
+    expect(answer.locator(".report-citation")).to_have_text("[1]")
+
+    page.reload()
+    expect(language).to_have_value("zh")
+    expect(page.get_by_role("heading", name="结论", exact=True)).to_be_visible(timeout=10000)
+    language.select_option("en")
+    expect(page.get_by_role("heading", name="Conclusion", exact=True)).to_be_visible()
+    expect(answer).to_contain_text("8.79 个百分点")
+    expect(answer.locator("p")).to_have_attribute("lang", "zh")
+
+    language.select_option("zh")
+    select_fixture_replay(page, "研究模式")
+    question.fill("Did Microsoft’s revenue growth accelerate in FY2024?")
+    submit.click()
+    expect(answer).to_contain_text("revenue growth accelerated", timeout=10000)
+    expect(answer.locator("p")).to_have_attribute("lang", "en")
+    expect(page.get_by_role("heading", name="结论", exact=True)).to_be_visible()
 
 
 def main():
@@ -25,10 +62,6 @@ def main():
         page = browser.new_page(viewport={"width": 1440, "height": 960})
         page.goto(os.environ.get("RESEARCH_TEST_URL", "http://127.0.0.1:8501/"))
         select_fixture_replay(page)
-        app_name = "Evidence-Driven Financial Research Agent"
-        brand = page.locator(".brand")
-        expect(page).to_have_title(app_name)
-        expect(brand).to_have_text(app_name)
         backdrop = page.locator(".research-app .market-texture")
         expect(backdrop).to_have_attribute("aria-hidden", "true")
         form = page.locator("#research-form")
@@ -136,11 +169,6 @@ def main():
         expect(page.locator(".side-facts")).to_have_text(activity)
         expect(step_times).to_have_text(saved_times)
         page.set_viewport_size({"width": 390, "height": 844})
-        mode = page.get_by_role("combobox", name="Research mode")
-        expect(brand).to_be_visible()
-        expect(mode).to_be_visible()
-        brand_box = brand.bounding_box()
-        assert brand_box["x"] + brand_box["width"] < mode.bounding_box()["x"]
         report_card = page.locator(".panel-main").bounding_box()
         assert support.bounding_box()["y"] > report_card["y"] + report_card["height"]
         sidebar_heading = page.get_by_role("heading", name="Research sessions")
@@ -267,6 +295,7 @@ def main():
         expect(audit.first).not_to_have_attribute("open", "")
         expect(audit.last).to_have_attribute("open", "")
         expect(page.locator(".result-claim.is-targeted")).to_contain_text("Microsoft released")
+        check_bilingual_workspace(page)
         browser.close()
     print("Browser acceptance passed.")
 

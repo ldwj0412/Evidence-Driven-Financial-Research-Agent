@@ -218,6 +218,222 @@ def _draft_from_payload(payload):
     return _model_response({"answers": context["answers"]})
 
 
+@pytest.mark.parametrize("draft_change", ["valid", "different_value", "wrong_language"])
+def test_live_chinese_question_is_parsed_and_answered_in_chinese(tmp_path, draft_change):
+    from financial_research.fixtures import PROMPTS_ZH, lookup_fixture, parse_fixture
+
+    question = "截至2024年8月31日，微软 FY2024 的营收增速是否加快？"
+    parsed = parse_fixture(PROMPTS_ZH["revenue"]).model_dump(mode="json")
+    parsed["as_of"] = "2024-08-31"
+    schemas = []
+    drafted = []
+
+    def handler(request):
+        payload = json.loads(request.content)
+        schema = payload["response_format"]["json_schema"]["name"]
+        context = json.loads(payload["messages"][-1]["content"])
+        schemas.append(schema)
+        assert context["response_language"] == "Chinese"
+        if schema == "Parsed":
+            assert context["question"] == question
+            return _model_response(parsed)
+        if schema == "Plan":
+            assert context["claims"][0]["entities"] == ["MSFT"]
+            assert context["claims"][0]["metric"] == "revenue"
+            return _model_response({"actions": context["allowed_candidates"]})
+        assert schema == "ConclusionDraft"
+        assert context["question"] == question
+        (answer,) = context["answers"]
+        assert answer["verdict"] == "Supported"
+        assert "营收增速" in answer["text"]
+        expected = answer["text"]
+        if draft_change == "different_value":
+            answer["text"] = expected.replace("8.79", "9.79")
+        elif draft_change == "wrong_language":
+            answer["text"] = "Yes. Microsoft's FY2024 revenue growth accelerated by 8.79 percentage points."
+        else:
+            answer["text"] = "经核实，" + expected
+        drafted.append(answer["text"])
+        return _model_response({"answers": [answer]})
+
+    service = ResearchService(
+        tmp_path / "chinese.sqlite3",
+        _config(tmp_path),
+        http_transport=httpx.MockTransport(handler),
+        replay=SimpleNamespace(lookup=lookup_fixture),
+    )
+    turn = service.start(
+        service.store.new_session(), question, "live", cutoff=datetime(2025, 1, 1, 15, tzinfo=UTC)
+    )
+    asyncio.run(service.execute(turn))
+    result = service.view(turn)
+    assert schemas == ["Parsed", "Plan", "ConclusionDraft"]
+    assert result["status"] == "Complete"
+    assert result["response_language"] == "zh"
+    assert result["parsed"]["as_of"] == "2024-08-31"
+    assert result["report"]["cutoff"].startswith("2024-09-01T")
+    report = result["report"]
+    assert report["overall"] == "Supported"
+    assert "8.79 个百分点" in report["conclusion"]
+    assert report["answers"][0]["evidence_ids"] == report["findings"][0]["evidence_ids"]
+    assert (report["conclusion"] == drafted[0]) == (draft_change == "valid")
+
+
+@pytest.mark.parametrize(
+    ("question", "language"),
+    [
+        ("MSFT FY2024 的 revenue 增速是否加快？", "zh"),
+        ("What was 微软's revenue in FY2024?", "en"),
+        ('Was Microsoft’s "营收" higher in FY2024?', "en"),
+    ],
+)
+def test_question_language_uses_prose_around_mixed_financial_terms(question, language):
+    from financial_research.language import question_language
+
+    assert question_language(question) == language
+
+
+def test_chinese_fiscal_year_end_is_not_an_evidence_cutoff():
+    from financial_research.planning import asks_for_as_of
+
+    assert not asks_for_as_of("截至2024年6月30日止的财年，微软的营收是多少？", None)
+    assert asks_for_as_of("只使用截至2024年8月15日披露的信息。", None)
+
+
+@pytest.mark.parametrize(
+    ("case_id", "question", "expected_amounts"),
+    [
+        (
+            "D07",
+            "为微软撰写研究报告时，按 2024 年 8 月 15 日可获得的数据版本，2024 年 6 月的有效联邦基金利率是多少？",
+            (),
+        ),
+        (
+            "C05",
+            "苹果 2024 财年第二季度营收为 907.53 亿美元，全年营收为 3,910.35 亿美元，这两个数字相互矛盾吗？",
+            ("90.753 billion USD", "391.035 billion USD"),
+        ),
+    ],
+)
+def test_live_chinese_evaluation_cases_preserve_vintage_and_dollar_scale(
+    tmp_path, case_id, question, expected_amounts
+):
+    from financial_research.evaluate import CaseReplay, read_catalog
+
+    catalog, evidence = read_catalog()
+    case = next(case for case in catalog["cases"] if case["id"] == case_id)
+
+    def handler(request):
+        payload = json.loads(request.content)
+        schema = payload["response_format"]["json_schema"]["name"]
+        context = json.loads(payload["messages"][-1]["content"])
+        if schema == "Parsed":
+            assert all(amount in context["question"] for amount in expected_amounts)
+            return _model_response(case["parsed"])
+        if schema == "Plan":
+            return _model_response({"actions": context["allowed_candidates"]})
+        assert schema == "ConclusionDraft"
+        assert context["question"] == question
+        return _draft_from_payload(payload)
+
+    service = ResearchService(
+        tmp_path / "assessment.sqlite3",
+        _config(tmp_path),
+        http_transport=httpx.MockTransport(handler),
+        replay=CaseReplay(case, evidence),
+    )
+    turn = service.start(
+        service.store.new_session(), question, "live", cutoff=datetime(2025, 1, 1, 15, tzinfo=UTC)
+    )
+    asyncio.run(service.execute(turn))
+    result = service.view(turn)
+    assert result["status"] == "Complete"
+    assert result["parsed"].get("as_of") == case.get("as_of")
+    assert result["report"]["overall"] == case["expectations"][0]["verdict"]
+    assert set(case["expectations"][0]["citations"]) <= {record["url"] for record in result["evidence"]}
+
+
+@pytest.mark.parametrize("missing_year", [False, True])
+def test_live_chinese_profit_clarification_uses_a_localized_template(tmp_path, missing_year):
+    fields = [
+        {
+            "name": "metric",
+            "label": "Profit metric",
+            "control": "select",
+            "options": [
+                {"value": "revenue", "label": "Revenue"},
+                {"value": "net_income", "label": "Net income"},
+                {"value": "diluted_eps", "label": "Diluted EPS"},
+            ],
+        }
+    ]
+    if missing_year:
+        fields.append(
+            {
+                "name": "year",
+                "label": "Fiscal year",
+                "control": "select",
+                "options": [{"value": "2024", "label": "FY2024"}],
+            }
+        )
+
+    def handler(request):
+        payload = json.loads(request.content)
+        assert payload["response_format"]["json_schema"]["name"] == "Parsed"
+        return _model_response(
+            {
+                "clarification": {
+                    "message": "请 уточ明您指的是哪项利润指标？",
+                    "fields": fields,
+                }
+            }
+        )
+
+    service = ResearchService(
+        tmp_path / "clarification.sqlite3", _config(tmp_path), http_transport=httpx.MockTransport(handler)
+    )
+    question = "微软的利润增长了吗？" if missing_year else "微软 2024 财年的利润增长了吗？"
+    turn = service.start(service.store.new_session(), question, "live")
+    asyncio.run(service.execute(turn))
+    result = service.view(turn)
+
+    assert result["status"] == "Waiting for clarification"
+    expected = "请选择利润指标和目标财年。" if missing_year else "请选择要比较的利润指标。"
+    assert result["clarification"]["message"] == expected
+    field, *others = result["clarification"]["fields"]
+    assert field["label"] == "利润指标"
+    assert field["options"] == [{"value": "net_income", "label": "净利润"}]
+    if missing_year:
+        (year,) = others
+        assert year["label"] == "目标财年"
+        assert year["options"] == [{"value": "2024", "label": "2024 财年"}]
+    else:
+        assert not others
+
+
+def test_chinese_clarification_resumes_with_canonical_choice_values(tmp_path):
+    from financial_research.fixtures import PROMPTS_ZH
+
+    path = tmp_path / "chinese-clarification.sqlite3"
+    service = ResearchService(path)
+    turn = service.start(service.store.new_session(), PROMPTS_ZH["profit"], "replay")
+    asyncio.run(service.execute(turn))
+    initial = service.view(turn)
+    assert initial["status"] == "Waiting for clarification"
+    assert "利润" in initial["clarification"]["message"]
+    fields = {item["name"]: item for item in initial["clarification"]["fields"]}
+    assert {item["value"]: item["label"] for item in fields["metric"]["options"]}[
+        "operating_income"
+    ] == "营业利润"
+
+    service = ResearchService(path, recover=True)
+    asyncio.run(service.execute(turn, {"metric": "operating_income", "year": "2024"}))
+    result = service.view(turn)
+    assert result["status"] == "Complete"
+    assert result["run_id"] == initial["run_id"]
+    assert "营业利润" in result["report"]["conclusion"]
+
+
 @pytest.mark.parametrize("provider", ["openrouter", "openai_compatible"])
 @pytest.mark.parametrize("company", ["MSFT", "AAPL"])
 def test_simple_growth_acceleration_uses_financial_only_parse(tmp_path, company, provider, monkeypatch):

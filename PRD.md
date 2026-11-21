@@ -12,7 +12,7 @@ The final course submission covers all three use cases with live integration acr
 | Company event investigation | Identify the event date, explain relevant financial changes, and build a dated timeline from disclosures and relevant independent coverage. Attribute explanations to their sources. Add macroeconomic context when relevant. |
 | Conflict detection | Compare the sources' periods, units, and measurement bases. Explain an apparent mismatch or identify the evidence for a genuine contradiction. |
 
-**Coverage.** Support Microsoft, Apple, NVIDIA, Amazon, Alphabet, Meta, Tesla, and Costco. Accept English questions about up to two covered companies from FY2022 onward, with earlier years available as calculation inputs when needed. Support annual and quarterly consolidated revenue, gross profit, operating income, net income, and diluted EPS. Calculate absolute change, year-over-year growth, growth acceleration, and gross, operating, and net margins. An explicitly disclosed adjusted or segment measure can explain a conflict when its definition and scope are available. The application is for educational research and limits its outputs to historical evidence and financial analysis.
+**Coverage.** Support Microsoft, Apple, NVIDIA, Amazon, Alphabet, Meta, Tesla, and Costco. Accept English and Chinese questions about up to two covered companies from FY2022 onward, with earlier years available as calculation inputs when needed. Support annual and quarterly consolidated revenue, gross profit, operating income, net income, and diluted EPS. Calculate absolute change, year-over-year growth, growth acceleration, and gross, operating, and net margins. An explicitly disclosed adjusted or segment measure can explain a conflict when its definition and scope are available. The application is for educational research and limits its outputs to historical evidence and financial analysis.
 
 ## 2. Approved interface
 
@@ -20,6 +20,8 @@ The reviewed preview is the reference for layout, visual hierarchy, and interact
 
 | Area | Required behavior |
 |---|---|
+| **Language** | Let users switch interface labels between English and Simplified Chinese and remember their selection in the browser. Answer each question in its own language and retain the language of saved answers and source quotations. |
+| **Connection settings** | Provide bilingual model and data source settings in the top bar. Accept the OpenRouter or OpenAI-compatible model settings, SEC project name and contact email, and masked FRED and Tavily keys. Show which sources have been configured. Apply changes for the current browser session and let users restore the file and environment configuration for each section. |
 | **Question area** | A full-width question area sits above the workspace. It contains the question field, **Run investigation**, example prompts, and an applicable follow-up suggestion. |
 | **Research sessions** | A left sidebar starts below the question area, aligned with the **Investigation workflow** heading. It contains **New session**, saved sessions, and the active session's questions. Selecting a question reopens its saved report. On narrow screens, the sidebar becomes a collapsible **Sessions** control below the question area. |
 | **Investigation workflow** | A clickable strip shows **Parse → Plan → Retrieve → Verify → Report**. Selecting a step reveals its output. **Plan** shows which sources were chosen, what was requested, and which claim each lookup serves. When the verifier requests a follow-up, the strip visibly returns to **Plan**. Both planner passes remain inspectable. |
@@ -43,7 +45,7 @@ The conflict demo must expose a readable loop in **Investigation history**: **Pa
 
 Use Python 3.12, LangGraph `StateGraph`, OpenRouter, HTTPX, Pydantic, Streamlit, SQLite, and pytest. LangGraph runs one investigation per turn and controls all stage transitions. [LangGraph Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api)
 
-Send all model calls through one server-side adapter to OpenRouter's Chat Completions endpoint. Read the OpenRouter API key, base URL, and model ID from local config. Use `openai/gpt-5-mini` as the initial configurable model. The parser and planner request a strict JSON Schema response with `response_format.type = "json_schema"` and `provider.require_parameters = true`. Validate the response in Pydantic before using it. Reject invalid plans before tool execution and surface a clear error if the selected model has no compatible route. Record the configured model ID and the routed provider when available for evaluation. [Chat Completions API](https://openrouter.ai/docs/api/api-reference/chat/create-a-chat-completion) · [Structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs) · [GPT-5 Mini on OpenRouter](https://openrouter.ai/openai/gpt-5-mini)
+Send model calls through the server-side Chat Completions adapter using OpenRouter or a configured OpenAI-compatible endpoint. The parser and planner request a strict JSON Schema response with `response_format.type = "json_schema"`. OpenRouter also receives `provider.require_parameters = true`. Validate the response in Pydantic before using it. Reject invalid plans before tool execution and surface a clear error if the selected model has no compatible route. Record the configured model ID and the routed provider when available for evaluation. [Chat Completions API](https://openrouter.ai/docs/api/api-reference/chat/create-a-chat-completion) · [Structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs)
 
 | Step | Responsibility and output |
 |---|---|
@@ -69,13 +71,24 @@ The core records are **Session**, **Turn**, **Parsed claim**, **Clarification re
 
 ## 5. Local configuration and credentials
 
-The application reads provider configuration from **`config.local.toml`** in the project root. Ship a matching **`config.example.toml`** with blank credential fields. The project owner copies the template to `config.local.toml` and fills in the keys later. Use Python's `tomllib` to read it and Pydantic to validate it.
+Use **`config.local.toml`** and environment variables for persistent provider settings. Ship a matching **`config.example.toml`** with blank credential fields. Read the file with `tomllib` and validate settings with Pydantic.
+
+The **Connection settings** dialog stores model and data source overrides in server memory for the current browser session. New and resumed investigations use the configuration captured when submitted. Blank data source fields keep the effective settings. Reuse a saved model credential only for the same provider and endpoint. Restore the model and data source sections independently to their file and environment defaults.
 
 ```toml
+[model]
+provider = "openrouter"
+
 [openrouter]
 api_key = ""
 base_url = "https://openrouter.ai/api/v1"
-model = "openai/gpt-5-mini"
+model = "openai/gpt-6-luna"
+
+[openai_compatible]
+api_key = ""
+base_url = ""
+model = ""
+token_limit_parameter = "max_completion_tokens"
 
 [fred]
 api_key = ""
@@ -87,9 +100,10 @@ api_key = ""
 user_agent = ""
 ```
 
-- Fill in `openrouter.api_key` with your OpenRouter key. Select a different model by setting `openrouter.model` to an OpenRouter model ID that supports structured outputs. FRED provides macro observations and Tavily provides news search. SEC EDGAR uses the project contact identifying string in `sec.user_agent`, for example `NLP Group Research <team-email>`.
-- Add `config.local.toml` and the local SQLite database to `.gitignore`. The example config contains placeholders. Keep real keys on the server side and redact them from logs, error messages, tool traces, report snapshots, and browser output.
-- A missing key gives a clear setup message naming the affected provider, without displaying credential values. When a retrieval provider is unavailable, continue with relevant configured sources. Saved reports and fixture replay remain accessible. Document the copy-and-fill setup in the app README.
+- Use an OpenRouter-issued key for the OpenRouter service. Use the gateway's own key, base URL, and model ID for an OpenAI-compatible endpoint that supports Bearer authentication, Chat Completions, and strict JSON Schema output. A keyless loopback endpoint can omit the key.
+- FRED provides macro observations and Tavily provides news search. SEC EDGAR uses the project contact identifying string in `sec.user_agent`, for example `NLP Group Research <team-email>`.
+- Add `config.local.toml` and the local SQLite database to `.gitignore`. The example config contains placeholders. Keep submitted credentials and SEC contact details in server memory for the app session. Redact them from logs, error messages, tool traces, report snapshots, and browser responses.
+- A missing key gives a clear setup message naming the affected provider. When a retrieval provider is unavailable, continue with relevant configured sources. Saved reports and fixture replay remain accessible. Document both configuration methods in the app README.
 
 ## 6. Evaluation and delivery
 

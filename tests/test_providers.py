@@ -189,6 +189,185 @@ def test_invalid_model_selection_does_not_fall_back_to_openrouter(tmp_path):
     assert not load_config(config).model_ready
 
 
+def test_browser_model_settings_preserve_only_keys_for_the_same_endpoint(tmp_path):
+    config = tmp_path / "config.local.toml"
+    config.write_text(
+        '[openrouter]\napi_key="test-router-from-file"\n'
+        '[openai_compatible]\napi_key="test-compatible-from-file"\n'
+        'base_url="https://company.example/v1"\nmodel="base-model"\n'
+        '[fred]\napi_key="test-fred-from-file"\n'
+    )
+    settings = load_config(config)
+    form = {
+        "provider": "openai_compatible",
+        "base_url": "https://company.example/v1/",
+        "model": "browser-model",
+        "token_limit_parameter": "max_tokens",
+        "api_key": "",
+    }
+    effective = settings.with_model(settings.model_from_form(form))
+    assert effective.model_ready
+    assert effective.model_provider == "openai_compatible"
+    assert effective.openai_compatible.api_key.get_secret_value() == "test-compatible-from-file"
+    assert effective.openrouter == settings.openrouter
+    assert effective.fred == settings.fred
+    view = effective.model_settings_view()
+    assert view["provider"] == "openai_compatible"
+    assert view["providers"]["openai_compatible"] == {
+        "base_url": "https://company.example/v1",
+        "model": "browser-model",
+        "token_limit_parameter": "max_tokens",
+        "has_key": True,
+    }
+    assert "test-router-from-file" not in str(view)
+    assert "test-compatible-from-file" not in str(view)
+    assert load_config(config) == settings
+
+    with pytest.raises(ValueError, match="Enter an API key for this endpoint"):
+        effective.model_from_form({**form, "base_url": "https://other.example/v1"})
+    loopback = effective.model_from_form({**form, "base_url": "http://127.0.0.1:8000/v1"})
+    assert loopback.ready
+    assert not loopback.api_key.get_secret_value()
+
+
+def test_session_data_source_settings_preserve_defaults_and_later_blank_fields(tmp_path, monkeypatch):
+    from financial_research.config import DataSourceOverrides
+
+    monkeypatch.setenv("FRED_API_KEY", "fred-from-environment")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.delenv("SEC_USER_AGENT", raising=False)
+    config = tmp_path / "config.local.toml"
+    config.write_text('[openrouter]\napi_key="router-from-file"\n')
+    base = load_config(config)
+    assert base.data_source_settings_view()["providers"] == {
+        "sec": {"configured": False},
+        "fred": {"configured": True},
+        "tavily": {"configured": False},
+    }
+    form = {
+        "sec_project": "Session Evidence Lab",
+        "sec_email": "session-contact@example.test",
+        "fred_api_key": " ",
+        "tavily_api_key": "tavily-session-token",
+    }
+    overrides = DataSourceOverrides().updated_from_form(form)
+    model = base.model_from_form({"provider": "openrouter", "model": "openai/session-model"})
+    active = base.with_model(model).with_data_sources(overrides)
+    assert active.openrouter.model == "openai/session-model"
+    assert active.fred == base.fred
+    assert form["sec_project"] in active.sec.user_agent
+    assert form["sec_email"] in active.sec.user_agent
+    assert active.tavily.api_key.get_secret_value() == form["tavily_api_key"]
+    assert all(not message.startswith(("SEC EDGAR ", "FRED ", "Tavily ")) for message in active.messages)
+
+    edited = overrides.updated_from_form({"fred_api_key": "fred-session-token", "tavily_api_key": " "})
+    updated = base.with_data_sources(edited)
+    assert updated.sec == active.sec
+    assert updated.tavily == active.tavily
+    assert updated.fred.api_key.get_secret_value() == "fred-session-token"
+    assert updated.data_source_settings_view()["providers"] == {
+        provider: {"configured": True} for provider in ("sec", "fred", "tavily")
+    }
+    view_text = str(updated.data_source_settings_view())
+    for secret in (form["sec_project"], form["sec_email"], form["tavily_api_key"], "fred-session-token"):
+        assert secret not in view_text
+    for secret in (updated.sec.user_agent, form["sec_email"], form["tavily_api_key"], "fred-session-token"):
+        assert updated.redact(secret) == "[redacted]"
+    assert load_config(config) == base
+
+
+@pytest.mark.parametrize(
+    "form",
+    [
+        {"sec_project": "Incomplete SEC project"},
+        {"sec_email": "incomplete-contact@example.test"},
+        {"sec_project": "Private Example Lab", "sec_email": "invalid-private-contact"},
+        {"sec_project": "Private Lab\r\nHeader injection", "sec_email": "contact@example.test"},
+        {"fred_api_key": "malformed fred token"},
+        {"tavily_api_key": "malformed tavily token"},
+    ],
+)
+def test_invalid_session_data_source_inputs_never_enter_validation_errors(form):
+    from financial_research.config import DataSourceOverrides
+
+    with pytest.raises(ValueError) as detail:
+        DataSourceOverrides().updated_from_form(form)
+    assert all(value not in str(detail.value) for value in form.values())
+
+
+def test_data_source_overrides_are_sent_only_to_their_provider(tmp_path):
+    from financial_research.config import DataSourceOverrides
+    from financial_research.domain import Action, Period
+    from financial_research.providers import LiveProviders
+
+    form = {
+        "sec_project": "Provider Transport Lab",
+        "sec_email": "transport-contact@example.test",
+        "fred_api_key": "transport-fred-token",
+        "tavily_api_key": "transport-tavily-token",
+    }
+    settings = load_config(tmp_path / "config.local.toml").with_data_sources(
+        DataSourceOverrides().updated_from_form(form)
+    )
+    requests = []
+    events = []
+
+    def handler(request):
+        host = request.url.host
+        requests.append(host)
+        if host == "data.sec.gov":
+            assert request.headers["User-Agent"] == settings.sec.user_agent
+            assert "Authorization" not in request.headers
+            assert "api_key" not in request.url.params
+        elif host == "api.stlouisfed.org":
+            assert request.url.params["api_key"] == form["fred_api_key"]
+            assert "Authorization" not in request.headers
+        else:
+            assert host == "api.tavily.com"
+            assert request.headers["Authorization"] == f"Bearer {form['tavily_api_key']}"
+            assert "api_key" not in request.url.params
+        if host != "data.sec.gov":
+            assert form["sec_email"] not in request.headers.get("User-Agent", "")
+        return httpx.Response(200, json={})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            provider = LiveProviders(
+                Transport(client, Budget(3), lambda *event: events.append(event), settings)
+            )
+            cutoff = datetime(2024, 8, 15, tzinfo=UTC)
+            for action in (
+                Action(
+                    source="sec",
+                    operation="financials",
+                    entity="MSFT",
+                    periods=[Period(year=2024)],
+                    claim_ids=["c1"],
+                    purpose="Check financials",
+                ),
+                Action(
+                    source="fred",
+                    operation="observations",
+                    series="FEDFUNDS",
+                    claim_ids=["c1"],
+                    purpose="Check rates",
+                ),
+                Action(
+                    source="news",
+                    operation="articles",
+                    query="Microsoft earnings",
+                    claim_ids=["c1"],
+                    purpose="Find coverage",
+                ),
+            ):
+                await provider.lookup(action, cutoff)
+
+    asyncio.run(run())
+    assert sorted(requests) == ["api.stlouisfed.org", "api.tavily.com", "data.sec.gov", "data.sec.gov"]
+    assert all(value not in str(events) for value in form.values())
+    assert "api_key" not in str(events)
+
+
 def test_recover_marks_active_runs_interrupted(tmp_path):
     from financial_research.storage import Store
 

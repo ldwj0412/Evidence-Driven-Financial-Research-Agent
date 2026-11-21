@@ -686,9 +686,17 @@ def verify_macro(claim, evidence):
 
 
 _EXPLANATION_REQUEST = re.compile(
-    r"\b(?:why|drove|drivers?|explain\w*|explanations?|reasons?|caus(?:e[ds]?|al|ing))\b",
+    r"\b(?:why|drove|drivers?|explain\w*|explanations?|reasons?|caus(?:e[ds]?|al|ing))\b"
+    r"|为什么|為什麼|为何|為何|原因|因素|驱动|驅動|推动|推動|解释|解釋|导致|導致|归因|歸因|成因",
     re.IGNORECASE,
 )
+_CHINESE_METRIC_WORDS = {
+    "revenue": r"营收|營收|营业收入|營業收入|总收入|總收入|销售额|銷售額",
+    "gross_profit": r"毛利(?:润|潤)?",
+    "operating_income": r"营业利润|營業利潤|经营利润|經營利潤|营业利益|營業利益",
+    "net_income": r"净利润|淨利潤|净收益|淨收益|净利|淨利",
+    "diluted_eps": r"稀释每股(?:收益|盈利)|稀釋每股(?:收益|盈餘)|摊薄每股收益",
+}
 _STATED_DRIVER = re.compile(
     r"\b(?:driven by|due to|reflect(?:ed|s)|resulted from|attribut(?:ed|able) to|contributed to|because of)\b",
     re.IGNORECASE,
@@ -702,12 +710,16 @@ _OBSERVED_CHANGE = re.compile(
 
 
 def asks_for_explanation(text):
-    return bool(_EXPLANATION_REQUEST.search(text))
+    return bool(text and _EXPLANATION_REQUEST.search(text))
 
 
 def named_metrics(text):
     text = re.sub(r"\bcosts? of (?:net )?(?:revenues?|sales)\b", "", text, flags=re.IGNORECASE)
-    return {key for key, pattern in _METRIC_WORDS.items() if re.search(pattern, text, re.IGNORECASE)}
+    return {
+        key
+        for key, pattern in _METRIC_WORDS.items()
+        if re.search(pattern, text, re.IGNORECASE) or re.search(_CHINESE_METRIC_WORDS[key], text)
+    }
 
 
 def _disclosed_driver_cause(text, metrics, *, metric_first=False):
@@ -855,10 +867,10 @@ def verified_disclosure_summaries(attributions, claims, evidence):
         ):
             continue
         text = " ".join(item.text.split())
-        paraphrase = text.strip(' .“”"').casefold()
+        paraphrase = text.strip(' .。！？“”"').casefold()
         quotes = [" ".join(ref.quote.split()).casefold() for ref in refs]
         source_numbers = set(_SUMMARY_NUMBER.findall(" ".join(quotes)))
-        if not paraphrase or text[-1:] not in {".", "!", "?"} or any(paraphrase in quote for quote in quotes):
+        if not paraphrase or text[-1:] not in ".!?。！？" or any(paraphrase in quote for quote in quotes):
             continue
         if set(_SUMMARY_NUMBER.findall(text)) - source_numbers:
             continue

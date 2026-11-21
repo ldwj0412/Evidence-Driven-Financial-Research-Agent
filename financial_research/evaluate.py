@@ -161,7 +161,11 @@ def _align_findings(expected_claims, findings, claims):
             if aligned[index] or kind != expected["kind"]:
                 continue
             expected_metric = expected.get("metric")
-            if claim and (
+            if claim and kind == "macro":
+                # A company named as report context does not identify a macroeconomic series.
+                if claim.get("series") != expected.get("series"):
+                    continue
+            elif claim and (
                 set(claim["entities"]) != set(expected.get("entities", []))
                 or (expected_metric is not None and claim.get("metric") != expected_metric)
             ):

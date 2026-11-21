@@ -19,6 +19,8 @@ uv run streamlit run app.py
 
 Keep the terminal open and visit the URL Streamlit prints, usually [http://127.0.0.1:8501](http://127.0.0.1:8501).
 
+Use the language selector to switch between **English** and **简体中文**. The browser remembers your selection. The language of your question determines the language of the answer, and changing the interface language leaves saved answers in their original language.
+
 | Mode | What the app uses | When to choose it |
 | --- | --- | --- |
 | **Fixture replay** | Bundled evidence and prepared model inputs for the examples. The app runs the calculations, verification, reporting, and session storage locally. | Learn the interface, demonstrate the workflow, or test without API keys. |
@@ -41,10 +43,10 @@ Other examples include **Source conflict**, **Rates and earnings**, **Company ev
 
 ## 3. Run a Live investigation
 
-Use English for questions and follow-ups. Chinese-language support is unavailable.
+Ask questions or follow-ups in English or Chinese. For example, enter **苹果 2024 财年第二季度单季营收是 907.53 亿美元吗？** to verify the same claim as the English example below.
 
-1. In the project folder, copy `config.example.toml` to `config.local.toml`. Follow [Enable live providers](../README.md#enable-live-providers) to get the keys and fill in the file. Public SEC data uses your project name and contact email.
-2. Start or restart Streamlit after saving the file. Open the app and select **Live** from **Research mode**.
+1. Open **Connection settings** (**连接设置**) and choose **Model settings** (**模型设置**). An OpenRouter-issued key goes under **OpenRouter**. A company gateway uses its own base URL, model ID, and key under **OpenAI-compatible** (**OpenAI 兼容接口**). It must support Chat Completions with strict JSON Schema output. Click **Save settings** (**保存设置**).
+2. Under **Data source settings** (**数据源设置**), enter an English project name and contact email for SEC filings. Add a FRED key for macroeconomic observations and a Tavily key for news if your question needs those sources. Save the settings and select **Live** from **Research mode**. Changes apply to the next submission in the current browser session. Use `config.local.toml` for persistent defaults. [Provider setup guide](../README.md#enable-live-providers)
 3. Click **New session** and enter a question. Specify the company, metric, and fiscal period for a precise check. For example:
 
    > Was Apple’s standalone FY2024 Q2 revenue $90.753 billion?
@@ -57,7 +59,7 @@ The Apple example checks the standalone quarter against SEC evidence. The report
 
 ![Live Apple revenue report showing a supported verdict and an open SEC citation](screenshots/10-live-report.png)
 
-If **Live** shows **Provider setup**, check the named setting in `config.local.toml` and restart the app. If a run stops or returns **Unresolved**, open the affected workflow tab and **Run details → Investigation history**. The app can retain findings it verified before a lookup failed. The active run budget is two minutes. Time waiting for a clarification answer is excluded.
+If **Live** shows **Provider setup**, open **Connection settings** and update the affected model or data source. If a run stops or returns **Unresolved**, open the affected workflow tab and **Run details → Investigation history** to see which lookups failed. The app can retain findings it verified before a lookup failed. The active run budget is two minutes. Time waiting for a clarification answer is excluded.
 
 ## 4. Read the workflow and report
 

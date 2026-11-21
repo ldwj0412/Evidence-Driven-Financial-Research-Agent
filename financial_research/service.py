@@ -13,7 +13,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 from pydantic import TypeAdapter, ValidationError
 
-from .config import load_config
+from .config import Settings, load_config
 from .domain import (
     Attribution,
     Attributions,
@@ -29,6 +29,7 @@ from .domain import (
     Plan,
 )
 from .fixtures import fixture_attributions, lookup_fixture, parse_fixture
+from .language import LANGUAGE_NAMES, question_language
 from .planning import (
     ATTRIBUTION_PROMPT,
     CONCLUSION_PROMPT,
@@ -41,6 +42,8 @@ from .planning import (
     clarification_asks_for_figures,
     explicit_financial_claim,
     fixture_plan,
+    localize_profit_clarification,
+    normalize_chinese_dollar_amounts,
     parameters,
     validate_plan,
 )
@@ -128,12 +131,12 @@ class ResearchService:
     def settings(self):
         return load_config(self.config)
 
-    def start(self, session, question, mode, parent=None, *, cutoff=None):
+    def start(self, session, question, mode, parent=None, *, cutoff=None, settings: Settings | None = None):
         if not isinstance(question, str) or not 1 <= len(question.strip()) <= 750:
             raise ValueError("Enter a research question between 1 and 750 characters.")
         if mode not in {"live", "replay"}:
             raise ValueError("Select Live or Fixture replay.")
-        question = self.settings.redact(question.strip())
+        question = (settings or self.settings).redact(question.strip())
         return self.store.create_turn(session, question, mode, parent, cutoff or utc_now())
 
     def delete_session(self, session: str):
@@ -146,6 +149,7 @@ class ResearchService:
 
     def view(self, turn):
         item = self.store.turn(turn)
+        item["response_language"] = question_language(item["question"])
         events = self.store.events(turn)
         counts = Counter()
         reused = set()
@@ -173,9 +177,11 @@ class ResearchService:
         item["events"] = events
         return item
 
-    async def execute(self, turn, answers=None, *, seconds=INVESTIGATION_TIMEOUT_SECONDS):
+    async def execute(
+        self, turn, answers=None, *, seconds=INVESTIGATION_TIMEOUT_SECONDS, settings: Settings | None = None
+    ):
         data = self.store.turn(turn)
-        settings = self.settings
+        settings = settings or self.settings
         status = "Waiting for clarification" if answers is not None else "Queued"
         if data["status"] != status:
             raise ValueError("This investigation is no longer available to run.")
@@ -270,6 +276,8 @@ class Investigation:
         self.id = turn["id"]
         self.mode = turn["mode"]
         self.replay = replay
+        self.language = question_language(turn["question"])
+        self.language_context = {"response_language": LANGUAGE_NAMES[self.language]}
         self.stage, self.pass_no = "Parse", 0
         transport = Transport(client, budget, self.emit, settings)
         self.router = model_client(transport) if self.mode == "live" and settings.model_ready else None
@@ -362,7 +370,8 @@ class Investigation:
                 )
             return Parsed(claims=[claim])
         context = {
-            "question": question,
+            **self.language_context,
+            "question": normalize_chinese_dollar_amounts(question),
             "prior_resolved_context": state.get("prior"),
             "clarification_answers": state.get("answers"),
             "run_started": state["cutoff"],
@@ -392,6 +401,9 @@ class Investigation:
                 parsed = parser(state["question"], prior, state.get("answers"))
             else:
                 parsed = await self.parse_live(state)
+                if self.language == "zh" and parsed.clarification:
+                    clarification = localize_profit_clarification(state["question"], parsed.clarification)
+                    parsed = parsed.model_copy(update={"clarification": clarification})
         except (ProviderError, ValidationError) as exc:
             return self.failure(
                 str(exc) if isinstance(exc, ProviderError) else "Parse produced an invalid claim."
@@ -414,7 +426,11 @@ class Investigation:
             parsed = parsed.model_copy(update={"as_of": None})
         if parsed.as_of:
             if parsed.as_of > cutoff.astimezone(EASTERN).date():
-                return self.failure("Choose an as-of date on or before today in U.S. Eastern time.")
+                return self.failure(
+                    "证据截止日期不得晚于美国东部时间的今天。"
+                    if self.language == "zh"
+                    else "Choose an as-of date on or before today in U.S. Eastern time."
+                )
             cutoff = date_end(parsed.as_of)
             self.store.set_cutoff(self.id, cutoff)
         output = parsed.model_dump(mode="json")
@@ -460,6 +476,7 @@ class Investigation:
                     "Plan",
                     PLAN_PROMPT,
                     {
+                        **self.language_context,
                         "claims": state["parsed"]["claims"],
                         "allowed_candidates": dump(*choices),
                         "verification_gaps": state.get("gaps", []),
@@ -657,6 +674,7 @@ class Investigation:
                         "source attribution",
                         ATTRIBUTION_PROMPT,
                         {
+                            **self.language_context,
                             "summarize_disclosures": asks_why,
                             "claims": dump(*relevant),
                             "documents": [
@@ -695,7 +713,7 @@ class Investigation:
                         DisclosureSynthesis,
                         "disclosure synthesis",
                         DISCLOSURE_SYNTHESIS_PROMPT,
-                        {"excerpts": dump(*missing)},
+                        {**self.language_context, "excerpts": dump(*missing)},
                     )
                     repaired = Attributions(entries=missing, summaries=repair.summaries)
                     summaries.extend(verified_disclosure_summaries(repaired, parsed.claims, evidence))
@@ -735,6 +753,7 @@ class Investigation:
                     "conclusion drafting",
                     CONCLUSION_PROMPT,
                     {
+                        **self.language_context,
                         "question": question,
                         "answers": [
                             {"index": index, "verdict": item["verdict"], "text": item["text"]}
@@ -750,11 +769,11 @@ class Investigation:
             )
             return
         rewritten = validated_conclusion(draft, answers)
-        if rewritten is None:
+        if rewritten is None or any(question_language(item["text"]) != self.language for item in rewritten):
             self.emit(
                 "conclusion",
                 "fallback",
-                {"message": "Used the verified answer because the draft changed protected details."},
+                {"message": "Used the verified answer to preserve details and the requested language."},
             )
             return
         snapshot["answers"] = rewritten
@@ -821,6 +840,7 @@ class Investigation:
             [Attribution.model_validate(item) for item in attributions],
             state["question"],
             state.get("disclosure_summaries", []),
+            language=self.language,
         )
         conclusion = " ".join(item["text"] for item in content["answers"])
         if not conclusion:

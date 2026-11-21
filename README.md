@@ -2,7 +2,7 @@
 
 Ask a historical financial question and inspect the figures, verdict, source evidence, and decisions behind the result. The app covers Microsoft, Apple, NVIDIA, Amazon, Alphabet, Meta, Tesla, and Costco. It runs locally with Streamlit, LangGraph, and SQLite.
 
-**Question language:** Use English for questions and follow-ups. Chinese-language support is unavailable.
+**Languages:** Ask questions and follow-ups in English or Chinese. In Live mode, the model reads the original question directly, and the answer follows the language of that question. Use the language selector to switch the interface between **English** and **简体中文** independently. Source quotations remain in their original language.
 
 ## Run locally
 
@@ -15,6 +15,8 @@ git clone https://github.com/ldwj0412/Evidence-Driven-Financial-Research-Agent.g
 cd Evidence-Driven-Financial-Research-Agent
 ```
 
+Bilingual support and workspace connection settings were contributed by [OttoCharles](https://github.com/OttoCharles/Evidence-Driven-Financial-Research-Agent).
+
 ```text
 uv python install 3.12
 uv sync --locked
@@ -24,6 +26,8 @@ uv run streamlit run app.py
 Keep the terminal open and visit [the local app](http://127.0.0.1:8501). Allow a few seconds for the first page to load. If Streamlit prints a different local URL, use that address. Press Ctrl+C in the terminal to stop the app.
 
 To check your installation, select **Fixture replay**, choose **Revenue growth**, and click **Run investigation**. The report should show **Supported** and **8.79 pp** of Microsoft revenue growth acceleration. Fixture replay runs without API keys. For live investigations, follow the provider setup below. Saved sessions and pending clarifications are restored on restart.
+
+To try the same flow in Chinese without keys, select **简体中文** and run the **营收增长** example. Use **Live** for questions outside the bundled examples and follow-ups.
 
 ## Read an investigation
 
@@ -48,7 +52,22 @@ See the [illustrated user manual](docs/user-manual.md) for the complete walkthro
 
 ## Enable live providers
 
-Put all live provider settings in `config.local.toml`. OpenRouter is the default model provider. Use the links below to get the keys for that setup and enter a real contact email for SEC EDGAR.
+Open **Connection settings** (**连接设置**) in the top bar. **Fixture replay** works with the bundled data. **Live** needs a model and the data sources relevant to the question.
+
+Under **Model settings** (**模型设置**), choose a service and enter its connection details.
+
+- Select **OpenRouter** for a key issued by OpenRouter and enter an OpenRouter model ID.
+- For a company gateway, select **OpenAI-compatible** (**OpenAI 兼容接口**). Enter its base URL, exact model ID, and API key, then select the endpoint's token-limit parameter. The endpoint must support Bearer authentication and `POST /chat/completions` with strict JSON Schema output. Enter the base URL up to the version prefix, for example `https://gateway.example.com/v1`. The app appends `/chat/completions`. Keyless loopback endpoints are also supported.
+
+Under **Data source settings** (**数据源设置**), configure the sources you need.
+
+- **SEC EDGAR** supplies public filings and financial statements. Enter an English project name and a real contact email, which the app sends in the SEC request's `User-Agent` header. [SEC access instructions](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data)
+- **FRED** supplies macroeconomic data such as interest rates and CPI. Enter your FRED API key. [FRED key registration](https://fredaccount.stlouisfed.org/apikeys)
+- **Tavily** supplies news search and article text. Enter your Tavily API key. [Tavily dashboard](https://app.tavily.com/home)
+
+For a question about a company's reported revenue or earnings, start with the model and SEC EDGAR. Click **Save settings** (**保存设置**) in the applicable section, then select **Live** (**实时研究**). New and resumed investigations use the settings in effect at submission. The app stores the connection overrides in server memory for the current browser session. Leave a data source blank to keep its current setting. A blank model key can reuse an existing key for the same provider and endpoint. Use **Restore defaults** in either section to return that section to the settings from the configuration file and environment.
+
+Use `config.local.toml` for persistent defaults. OpenRouter is the default model provider.
 
 | Provider | TOML setting | Purpose | Where to get access |
 | --- | --- | --- | --- |
@@ -101,7 +120,7 @@ token_limit_parameter = "max_completion_tokens"
 
 The endpoint must implement `POST /chat/completions` and accept strict `response_format: json_schema` requests. The app appends `/chat/completions` to the base URL. Set `token_limit_parameter = "max_tokens"` if the endpoint uses the older parameter. For a server on the same machine, you can use a loopback URL such as `http://127.0.0.1:8080/v1` and leave the key blank if the server does not require one. Remote endpoints require HTTPS and a key. [Chat Completions API reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)
 
-Start or restart Streamlit after saving the file, then select **Live** in the app. An unconfigured retrieval provider appears in **Provider setup**. Findings from available sources still appear when a provider fails. SEC Company Facts and the SEC filing archive use different endpoints. If the archive rejects access, the run log records the response and affected claims remain unresolved.
+Select **Live** in the app. **Provider setup** lists connection settings that need attention. Findings from available sources still appear when a provider fails. SEC Company Facts and the SEC filing archive use different endpoints. If the archive rejects access, the run log records the response and affected claims remain unresolved.
 
 A live investigation has a two-minute active budget. Each model request attempt can use up to two minutes, bounded by the remaining investigation time. Time spent waiting for a clarification answer is excluded.
 
@@ -135,7 +154,7 @@ uv run streamlit run app.py
 uv run python tests/browser_acceptance.py
 ```
 
-The browser checks use installed Edge on Windows. Otherwise, install the bundled browser with `uv run playwright install chromium`. Set `RESEARCH_TEST_URL` if the test app uses a different local port.
+The browser checks use installed Edge on Windows. Otherwise, install the bundled browser with `uv run playwright install chromium`. Set `RESEARCH_TEST_URL` if the test app uses a different local port. Run `uv run python tests/browser_model_settings.py` to test connection settings against an isolated app and local mock endpoints without provider credentials.
 
 The [evaluation guide](evaluation/README.md) lists all 30 questions, expected checks, and recorded results. The [assessment catalog](evaluation/cases.json) and [frozen evidence](evaluation/evidence.json) contain the machine-readable cases and sources. Replay uses curated parse and attribution outputs and runs the same graph, retrieval interfaces, calculations, and storage. Record live-model scores separately:
 

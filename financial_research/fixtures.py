@@ -1,8 +1,10 @@
 import re
+import unicodedata
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from .domain import Attributions, Claim, Document, Fact, Parsed, Period
+from .language import METRICS_ZH, question_language
 from .providers import ProviderError
 from .sec import stable_id
 
@@ -14,6 +16,15 @@ PROMPTS = {
     "profit": "Did Microsoft’s profit increase?",
     "operating": "What about operating income?",
     "missing": "What about FY2025?",
+}
+PROMPTS_ZH = {
+    "revenue": "微软 FY2024 的营收增速是否加快？",
+    "conflict": "为什么两个来源分别称微软 FY2024 的营收增长了 16% 和 15%？",
+    "rates": "利率能否解释微软 FY2024 营收增速加快？",
+    "event": "微软在 2024 年 7 月 30 日发布 FY2024 财报时发生了什么？",
+    "profit": "微软的利润增加了吗？",
+    "operating": "营业利润呢？",
+    "missing": "FY2025 呢？",
 }
 EXAMPLES = {
     "Revenue growth": "revenue",
@@ -37,8 +48,9 @@ _RELEASE_TEXT = "Revenue was $245.1 billion and increased 16% (up 15% in constan
 _EVENT_TEXT = "Microsoft Corp. today announced the following results for the fiscal year ended June 30, 2024"
 
 
-def _key(text):
-    return " ".join(text.replace("’", "'").lower().split())
+def _key(text, chinese=False):
+    text = unicodedata.normalize("NFKC", text).replace("’", "'").lower()
+    return "".join(text.split()).rstrip("?。") if chinese else " ".join(text.split())
 
 
 def _base(metric="revenue", year=2024, measure="acceleration", label=None):
@@ -55,16 +67,20 @@ def _base(metric="revenue", year=2024, measure="acceleration", label=None):
 
 
 def parse_fixture(question, previous=None, answers=None):
-    question, answers = _key(question), answers or {}
-    prompts = {key: _key(text) for key, text in PROMPTS.items()}
+    chinese = question_language(question) == "zh"
+    question, answers = _key(question, chinese), answers or {}
+    prompts = {key: _key(text, chinese) for key, text in (PROMPTS_ZH if chinese else PROMPTS).items()}
+    revenue_label = "微软的营收增速加快" if chinese else None
     if question == prompts["revenue"]:
-        return Parsed(claims=[_base()])
+        return Parsed(claims=[_base(label=revenue_label)])
     if question == prompts["conflict"]:
         return Parsed(
             claims=[
                 Claim(
                     id="c1",
-                    label="The 16% and 15% growth figures contradict each other",
+                    label="16% 和 15% 两个增幅互相矛盾"
+                    if chinese
+                    else "The 16% and 15% growth figures contradict each other",
                     kind="conflict",
                     entities=["MSFT"],
                     metric="revenue",
@@ -77,10 +93,12 @@ def parse_fixture(question, previous=None, answers=None):
     if question == prompts["rates"]:
         return Parsed(
             claims=[
-                _base(),
+                _base(label=revenue_label),
                 Claim(
                     id="c2",
-                    label="Interest rates explain the revenue growth acceleration",
+                    label="利率能解释营收增速加快"
+                    if chinese
+                    else "Interest rates explain the revenue growth acceleration",
                     kind="causal",
                     entities=["MSFT"],
                     event="interest rates and earnings",
@@ -95,10 +113,15 @@ def parse_fixture(question, previous=None, answers=None):
     if question == prompts["event"]:
         return Parsed(
             claims=[
-                _base(measure="growth", label="Microsoft’s FY2024 revenue grew"),
+                _base(
+                    measure="growth",
+                    label="微软 FY2024 的营收增长" if chinese else "Microsoft’s FY2024 revenue grew",
+                ),
                 Claim(
                     id="c2",
-                    label="Microsoft released its FY2024 results on July 30, 2024",
+                    label="微软在 2024 年 7 月 30 日发布了 FY2024 财报"
+                    if chinese
+                    else "Microsoft released its FY2024 results on July 30, 2024",
                     kind="event",
                     entities=["MSFT"],
                     period=Period(year=2024),
@@ -110,14 +133,18 @@ def parse_fixture(question, previous=None, answers=None):
     if question in {prompts["operating"], prompts["missing"]}:
         if not previous or not previous.claims:
             return Parsed(
-                out_of_scope="Open the Microsoft revenue replay report before running this follow-up."
+                out_of_scope="请先打开微软营收的回放报告，再提交这条追问。"
+                if chinese
+                else "Open the Microsoft revenue replay report before running this follow-up."
             )
         old = previous.claims[0]
         if question == prompts["operating"]:
             claim = old.model_copy(
                 update={
                     "metric": "operating_income",
-                    "label": "Microsoft’s operating income growth accelerated",
+                    "label": "微软的营业利润增速加快"
+                    if chinese
+                    else "Microsoft’s operating income growth accelerated",
                 }
             )
             return Parsed(claims=[claim], carried=["company", "period", "comparison"])
@@ -125,11 +152,15 @@ def parse_fixture(question, previous=None, answers=None):
             update={
                 "period": Period(year=2025),
                 "assertion": "describe",
-                "label": f"Microsoft FY2025 {old.metric.replace('_', ' ')}",
+                "label": f"微软 FY2025 的{METRICS_ZH.get(old.metric, '财务指标')}"
+                if chinese
+                else f"Microsoft FY2025 {old.metric.replace('_', ' ')}",
             }
         )
         return Parsed(claims=[claim], carried=["company", "metric", "comparison"])
-    if "microsoft" in question and "profit" in question and "increase" in question:
+    if ("microsoft" in question and "profit" in question and "increase" in question) or (
+        "微软" in question and "利润" in question and re.search(r"增加|增长|上升", question)
+    ):
         match = re.search(r"(?:fy\s*)?(20\d{2})", question)
         year = match[1] if match else answers.get("year")
         metric = answers.get("metric")
@@ -138,10 +169,10 @@ def parse_fixture(question, previous=None, answers=None):
             fields.append(
                 {
                     "name": "metric",
-                    "label": "Profit metric",
+                    "label": "利润指标" if chinese else "Profit metric",
                     "control": "select",
                     "options": [
-                        {"value": value, "label": label}
+                        {"value": value, "label": METRICS_ZH[value] if chinese else label}
                         for value, label in (
                             ("gross_profit", "Gross profit"),
                             ("operating_income", "Operating income"),
@@ -154,24 +185,36 @@ def parse_fixture(question, previous=None, answers=None):
             fields.append(
                 {
                     "name": "year",
-                    "label": "Fiscal year",
+                    "label": "财年" if chinese else "Fiscal year",
                     "control": "select",
                     "options": [{"value": str(y), "label": f"FY{y}"} for y in (2024, 2023)],
                 }
             )
         if fields:
             return Parsed(
-                clarification={"message": "Choose the missing details to compare profit.", "fields": fields}
+                clarification={
+                    "message": "请选择要比较的利润指标和期间。"
+                    if chinese
+                    else "Choose the missing details to compare profit.",
+                    "fields": fields,
+                }
             )
         return Parsed(
             claims=[
                 _base(
-                    metric, int(year), "change", f"Microsoft {metric.replace('_', ' ')} increased in FY{year}"
+                    metric,
+                    int(year),
+                    "change",
+                    f"微软 FY{year} 的{METRICS_ZH[metric]}增加"
+                    if chinese
+                    else f"Microsoft {metric.replace('_', ' ')} increased in FY{year}",
                 )
             ]
         )
     return Parsed(
-        out_of_scope="Fixture replay covers the example questions and suggested follow-ups. "
+        out_of_scope="示例回放支持预设问题和推荐追问。其他历史财务问题请使用实时研究模式。"
+        if chinese
+        else "Fixture replay covers the example questions and suggested follow-ups. "
         "Choose Live for other historical questions."
     )
 

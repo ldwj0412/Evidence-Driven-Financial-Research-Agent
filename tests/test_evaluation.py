@@ -88,6 +88,36 @@ def test_causal_finding_may_name_the_financial_metric_when_expected_metric_is_un
     assert evaluate._score(case, findings, [], [], claims=other_company)["verdict_correct"] == 1
 
 
+def test_macro_scoring_uses_the_series_and_checks_the_historical_citation():
+    catalog, evidence = read_catalog()
+    case = next(case for case in catalog["cases"] if case["id"] == "D07")
+    (expected_claim,) = case["parsed"]["claims"]
+    claim = {**expected_claim, "entities": []}
+    (source_id,) = case["evidence"]
+    source = evidence[source_id].model_dump(mode="json")
+    finding = {
+        "claim_id": claim["id"],
+        "verdict": "Supported",
+        "evidence_ids": [source_id],
+        "calculations": [
+            {
+                "result": "5.33",
+                "unit": "%",
+                "operands": [{"value": "5.33"}],
+                "evidence_ids": [source_id],
+            }
+        ],
+    }
+    score = evaluate._score(case, [finding], [], [source], claims=[claim])
+    assert score["verdict_correct"] == score["verdict_total"] == 1
+    assert score["financial_correct"] == score["financial_total"] == 1
+    assert score["citation_correct"] == score["citation_total"] == 1
+    wrong_series = {**claim, "series": "CPIAUCSL"}
+    assert evaluate._score(case, [finding], [], [source], claims=[wrong_series])["verdict_correct"] == 0
+    wrong_vintage = {**source, "url": source["url"].replace("2024-08-15", "2026-11-21")}
+    assert evaluate._score(case, [finding], [], [wrong_vintage], claims=[claim])["citation_correct"] == 0
+
+
 def test_live_smoke_resumes_eps_with_the_consolidated_option(monkeypatch):
     request = {
         "message": "Which scope do you mean?",

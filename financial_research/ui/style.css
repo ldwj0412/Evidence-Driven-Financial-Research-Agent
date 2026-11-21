@@ -89,23 +89,52 @@ a { color: var(--green); text-underline-offset: 3px; }
 .session-turns time::before { content: " · "; white-space: pre; }
 .session-list button:disabled, .session-turns button:disabled { cursor: default; opacity: .65; }
 .session-empty { color: var(--muted); font-size: .82rem; margin: 5px 4px 0; }
-.delete-dialog {
+.delete-dialog, .connection-settings-dialog {
   width: min(430px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 23px;
   color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
   box-shadow: 0 18px 54px rgb(16 45 37 / .24);
 }
-.delete-dialog::backdrop { background: rgb(16 45 37 / .48); }
-.delete-dialog h2 { font-size: 1.75rem; }
+.delete-dialog::backdrop, .connection-settings-dialog::backdrop { background: rgb(16 45 37 / .48); }
+.delete-dialog h2, .connection-settings-dialog h2 { font-size: 1.75rem; }
 .delete-dialog p { margin-top: 8px; overflow-wrap: anywhere; }
 .delete-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 19px; }
 .delete-actions .secondary { min-height: 42px; padding: 6px 13px; }
 .delete-actions .delete-session { background: var(--red); border-color: var(--red); color: #fff; }
 .delete-actions .delete-session:not(:disabled):hover { background: #6f2b24; border-color: #6f2b24; }
+.connection-settings-dialog { width: min(520px, calc(100% - 28px)); }
+#connection-settings-scope { margin: 8px 0 15px; color: var(--muted); }
+.connection-settings-dialog fieldset { display: grid; gap: 12px; min-width: 0; border: 0; margin: 0; padding: 0; }
+.connection-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 0 0 15px; }
+.connection-tabs button {
+  border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted);
+  padding: 6px 10px 8px; font-size: .87rem; font-weight: 650;
+}
+.connection-tabs button[aria-selected="true"] { border-color: var(--green); color: var(--green); }
+.connection-tabs button:disabled { cursor: default; opacity: .65; }
+.model-fields { display: grid; gap: 12px; }
+.model-field { display: grid; gap: 4px; }
+.model-field label { font-weight: 650; }
+.model-field p { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+.model-field input, .model-field select {
+  min-height: 42px; min-width: 0; width: 100%; background: var(--surface); color: var(--ink);
+  border: 1px solid #a7b5a7; border-radius: 7px; padding: 0 9px;
+}
+.connection-settings-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 5px; }
+.connection-settings-actions button { min-height: 42px; padding: 6px 13px; }
+.connection-reset { margin-inline-end: auto; }
+.connection-settings-error, .connection-feedback { font-size: .84rem; overflow-wrap: anywhere; }
+.connection-settings-error { margin-bottom: 12px; color: var(--red); }
+.connection-feedback { color: var(--green); text-align: end; }
+.data-source-group { display: grid; gap: 7px; padding: 9px 0 5px; border-top: 1px solid var(--line); }
+.data-source-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.data-source-description { color: var(--muted); font-size: .82rem; }
+.sec-contact-fields { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.data-source-setup { margin-top: 7px; }
 .storage-note { margin: auto 4px 0; color: var(--muted); font-size: .75rem; }
 .shell { width: min(1280px, calc(100% - 64px)); margin: 0 auto; }
 .brandbar { display: flex; align-items: center; justify-content: space-between; min-height: 62px; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 11px; font-size: .91rem; font-weight: 650; letter-spacing: .015em; }
-.mark { flex: none; width: 32px; height: 32px; padding: 7px; display: grid; grid-template-rows: repeat(3, 2px); align-content: space-between; background: #145447; border-radius: 8px; }
+.mark { width: 32px; height: 32px; padding: 7px; display: grid; grid-template-rows: repeat(3, 2px); align-content: space-between; background: #145447; border-radius: 8px; }
 .mark i { height: 2px; background: #c6e4bc; border-radius: 1px; }
 .mark i:nth-child(2) { width: 72%; }
 .mark i:nth-child(3) { width: 87%; }
@@ -377,7 +406,8 @@ a { color: var(--green); text-underline-offset: 3px; }
 .clarify label { font-weight: 650; }
 .clarify select { min-height: 42px; width: 100%; background: var(--surface); color: var(--ink); border: 1px solid #a7b5a7; border-radius: 7px; padding: 0 9px; }
 .clarify button { grid-column: 1 / -1; justify-self: start; }
-.mode-control select {
+.mode-control { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.mode-control select, .connection-settings-trigger {
   color: var(--ink); background: rgb(248 253 251 / .84); border: 1px solid var(--glass-edge);
   padding: 5px 9px; border-radius: 99px; font-size: .8rem;
 }
@@ -409,6 +439,8 @@ a { color: var(--green); text-underline-offset: 3px; }
   .brandbar { min-height: 56px; }
   .brand { font-size: .78rem; gap: 7px; }
   .mark { width: 24px; height: 24px; padding: 5px; }
+  .mode-control select, .connection-settings-trigger { padding-inline: 6px; }
+  .model-field input, .model-field select { font-size: 16px; }
   .hero { padding: 22px 0 15px; }
   .hero .intro { margin: 7px 0 14px; }
   .prompt-form { padding-inline-start: 9px; border-radius: 24px; gap: 5px; }
