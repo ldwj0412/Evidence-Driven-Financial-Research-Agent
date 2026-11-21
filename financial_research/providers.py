@@ -17,6 +17,7 @@ from .domain import COMPANIES, Action, Document, Fact
 from .sec import (
     EASTERN,
     FORMS,
+    annual_results_heading,
     document_record,
     exhibit_names,
     filing_rows,
@@ -461,6 +462,13 @@ class LiveProviders:
             )
             if document:
                 ranked = relevant_passages(document.passages, action.query or action.purpose)
+                if (
+                    action.operation == "release"
+                    and document.period
+                    and annual_results_heading(document.passages[0], document.period)
+                ):
+                    heading = document.passages[0]
+                    ranked = [heading, *(passage for passage in ranked if passage != heading)][:20]
                 documents.append(document.model_copy(update={"passages": ranked}))
                 if action.operation == "release" and document.period and period_facts:
                     start = min(item.start for item in period_facts)

@@ -5,6 +5,7 @@ from decimal import Decimal
 from itertools import groupby
 
 from .domain import COMPANIES, METRICS, Calculation, Fact, Operand, Period
+from .sec import annual_results_heading
 from .verification import (
     asks_for_explanation,
     calculation,
@@ -452,6 +453,16 @@ def _disclosure_content(explanations, attributions, summaries, claims, records):
 def _event_caption(claim, document, quote, evidence):
     day = claim.event_date or document.published
     event_date = f"{day:%B} {day.day}, {day.year}"
+    if (
+        document.source == "sec"
+        and document.form
+        and "exhibit" in document.form
+        and document.entity
+        and document.published == day
+        and document.period == claim.period
+        and annual_results_heading(quote, claim.period)
+    ):
+        return f"{COMPANIES[document.entity][0]} announced its {claim.period.label} results on {event_date}."
     if (
         claim.period
         and document.entity

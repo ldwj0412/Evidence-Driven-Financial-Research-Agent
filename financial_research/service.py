@@ -662,6 +662,8 @@ class Investigation:
                                     "id": item.id,
                                     "date": item.published.isoformat(),
                                     "publisher": item.publisher,
+                                    "form": item.form,
+                                    "period": item.period.model_dump(mode="json") if item.period else None,
                                     "passages": [text[:800] for text in item.passages[:12]],
                                 }
                                 for item in documents[:12]

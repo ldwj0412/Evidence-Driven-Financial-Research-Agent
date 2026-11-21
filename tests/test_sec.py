@@ -2,7 +2,12 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from financial_research.domain import Document, Period
-from financial_research.sec import document_record, normalize_company_facts, reported_quarter_eps
+from financial_research.sec import (
+    document_record,
+    normalize_company_facts,
+    period_passages,
+    reported_quarter_eps,
+)
 
 
 def test_fiscal_year_uses_native_end_and_comparatives_and_tracks_restatement():
@@ -187,3 +192,17 @@ def test_exhibit_keeps_quarterly_eps_in_a_long_dated_opening_paragraph():
     assert eps.value == Decimal("0.97")
     assert eps.derived_from == [exhibit.id]
     assert document_record(*args, date(2023, 9, 30)).period is None
+
+
+def test_explicit_full_year_heading_identifies_the_annual_earnings_section():
+    passages = [
+        "Fourth Quarter 2024",
+        "Operating income rose in the fourth quarter.",
+        "Full Year 2023",
+        "Operating income was $36.9 billion.",
+        "Full Year 2024",
+        "Operating income was $68.6 billion.",
+        "First Quarter 2025 Guidance",
+        "We expect operating income to rise.",
+    ]
+    assert period_passages(passages, Period(year=2024), date(2024, 12, 31)) == passages[4:6]

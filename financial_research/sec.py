@@ -391,6 +391,16 @@ def document_record(
     )
 
 
+_ANNUAL_RESULTS_HEADING = re.compile(
+    r"(?:full[ -]year|fiscal year)\s+(20\d{2})(?:\s+(?:financial\s+)?results)?", re.IGNORECASE
+)
+
+
+def annual_results_heading(passage, period):
+    match = _ANNUAL_RESULTS_HEADING.fullmatch(passage.strip())
+    return bool(match and period and period.quarter is None and int(match[1]) == period.year)
+
+
 def period_passages(passages, period, period_end=None):
     selected = []
     section_matches = False
@@ -446,7 +456,13 @@ def period_passages(passages, period, period_end=None):
                 section_matches = (
                     quarter_matches
                     if period.quarter
-                    else annual and (full_date_matches or not period_end and str(period.year) in opening)
+                    else annual
+                    and (
+                        full_date_matches
+                        or annual_results_heading(opening, period)
+                        or not period_end
+                        and str(period.year) in opening
+                    )
                 )
             elif quarter_matches and full_date_matches:
                 # A dated opening sentence identifies this paragraph without starting a table section.

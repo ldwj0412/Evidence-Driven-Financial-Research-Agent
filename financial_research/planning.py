@@ -19,21 +19,36 @@ including testable financial premises of a causal claim. Report targets in base 
 percent, or percentage points with precision from the claim. For describe, target can be null.
 Treat "how much did [metric] grow" between fiscal years as percentage growth unless the question
 specifies dollars, an absolute change, or a different unit.
+For "did [metric] rise/fall/increase/decrease" across periods, use growth and a positive/negative
+assertion. Use measure=value only for a level or its sign within a single period. For "absolute
+change" use change. When a question asks how a monetary amount changed and gives no percentage
+or growth-rate wording, use change.
 When an explicit fiscal quarter accompanies "standalone", use the company's consolidated result
 for that quarter alone unless the question specifies a legal entity or non-consolidated scope.
 In a two-company comparison, order the subject before the comparator. Use fiscal years, not
 calendar years, unless the user clearly provides a calendar event date. For a conflict between
 growth percentages, capture both literal reported values, the metric/fiscal period, measure=growth,
 the asserted mismatch as the claim label, and separate adjustments from the consolidated figure.
+When the question asks if two quoted rates contradict each other or why sources differ, return
+kind=conflict. Computing a reported growth rate alone cannot resolve the question.
 In reported_values, write a percentage as a number in display units, e.g. 16% becomes 16.
 For all non-conflict claims, set reported_values and figures to []. Never put placeholders in arrays.
 If the figures refer to different periods, scope, measures or unit scales, use figures to capture
-the displayed value, unit, scale, period, scope and measure for each. Use null when basis is unstated.
+the displayed value, unit, scale, period, scope and measure for each. If two percentages share
+the same metric and period and the question gives neither figure a basis, use only reported_values
+and leave figures empty. Never guess which rate is reported, adjusted, or in constant currency.
 For events specify what happened or why, the relevant fiscal period or date/window if known.
+When a financial question mentions a dated company results announcement, verify that announcement
+as a separate event claim even if it is phrased as context ("when X announced" or "in the results
+announced on [date]"). Put the date on the event and link the applicable fiscal period to both
+claims. Keep the requested calculation as its own financial claim.
 If the question asks what the company said drove a result, treat that as an event about its
 disclosure and include the requested drivers in the event description. A causal claim is for
 questions asking whether a factor actually caused the result.
 For macro context, use FEDFUNDS, CPIAUCSL, or UNRATE and specify the observation window if known.
+When a macro indicator is only a possible cause, set series and window_start/window_end on the
+causal claim to retrieve context. Create a separate macro claim only if the user also asks a
+standalone question about the indicator's level or change.
 Return requested as_of date separately. Latest only when the question asks for latest or current.
 Use null for as_of unless the question or clarification asks for an evidence cutoff or vintage,
 or the follow-up depends on the selected report's historical cutoff. Fiscal comparison periods
@@ -42,6 +57,10 @@ Use the selected parent report only for omitted fields with a clear meaning. Exp
 clarification answers override parent context. Read all clarification answers together across rounds.
 List the precise fields carried forward. Ask only for material missing information. Generic 'profit'
 without a resolved definition needs the metric.
+For an increase or decrease with no comparison period specified, default to the preceding year
+(the same fiscal quarter for quarterly questions). If the target period is missing, ask for the
+target fiscal year using the year field with year digits. Ask for the metric too if it is ambiguous.
+Do not ask for a separate comparison field when this default supplies it.
 Use reported and consolidated as the default basis and scope. Keep a prior explicit as-of date
 where the follow-up depends on that same historical context.
 If the question already specifies FY2024, ask only for the missing metric. Allowed select answers
@@ -83,6 +102,8 @@ Growth acceleration needs the current and prior year's growth rates. When the ve
 a release, pick the earnings exhibit. An event investigation uses
 a primary filing and independent article text if available. For a company's stated reasons for
 a financial change, prioritize the primary annual or quarterly filing with management discussion.
+For a dated company earnings announcement, prefer the earnings exhibit when it is an available
+candidate. Its full text can verify both the announcement and what was announced.
 Macroeconomic observations provide
 context for rates, CPI, or unemployment questions. Do not use custom URLs or unrelated sources.
 """
@@ -100,6 +121,10 @@ ID, and a short verbatim contiguous quote from that document. Use event only for
 description that identifies the stated company event and date. Use explanation for an expressly
 attributed statement about a reason or driver. Use causal_evidence only for an independent study
 that identifies the stated relationship with a methodology that addresses alternative explanations.
+A dated issuer earnings exhibit can announce both quarterly and annual results. A clearly
+labeled full-year results heading can establish that the annual results were included, with the
+announcement date supplied by the exhibit metadata. Cite that heading when the opening paragraph
+only mentions the quarter.
 For a question about what the company said, look for a dated event passage and separate
 explanation passages that name what drove the observed result in the requested period.
 When summarize_disclosures is true, summarize those disclosed drivers in up to three short
@@ -137,6 +162,9 @@ _NAMED_COMPANY = rf"(?P<company>{'|'.join(map(re.escape, _COMPANY_ALIASES))})(?:
 _NAMED_METRIC = rf"(?P<metric>{'|'.join(map(re.escape, _METRIC_ALIASES))})"
 _FISCAL_PERIOD = r"FY\s*(?P<year>20\d{2})(?:\s+Q(?P<quarter>[1-4]))?"
 _PERCENT_NUMBER = r"[+-]?\d+(?:\.\d+)?"
+_PERCENT_PAIR = (
+    rf"(?P<first>{_PERCENT_NUMBER})\s*%\s+(?:and|vs\.?|versus)\s+(?P<second>{_PERCENT_NUMBER})\s*%"
+)
 _ACCELERATION_QUERY = re.compile(
     rf"did\s+{_NAMED_COMPANY}\s+{_NAMED_METRIC}\s+growth\s+accelerate\s+"
     rf"(?:in|during)\s+{_FISCAL_PERIOD}\s*\??",
@@ -145,8 +173,12 @@ _ACCELERATION_QUERY = re.compile(
 _GROWTH_CONFLICT_QUERY = re.compile(
     rf"why\s+do\s+(?:(?:two|different)\s+)?sources\s+(?:say|report)\s+"
     rf"{_NAMED_COMPANY}\s+{_FISCAL_PERIOD}\s+{_NAMED_METRIC}\s+"
-    rf"(?:grew|growth\s+was|growth\s+of)\s+(?P<first>{_PERCENT_NUMBER})\s*%\s+"
-    rf"(?:and|vs\.?|versus)\s+(?P<second>{_PERCENT_NUMBER})\s*%\s*\??",
+    rf"(?:grew|growth\s+was|growth\s+of)\s+{_PERCENT_PAIR}\s*\??",
+    re.IGNORECASE,
+)
+_LEADING_PERCENT_CONFLICT_QUERY = re.compile(
+    rf"do\s+{_NAMED_COMPANY}\s+{_PERCENT_PAIR}\s+{_FISCAL_PERIOD}\s+{_NAMED_METRIC}\s+"
+    r"growth\s+(?:figures|rates)\s+(?:conflict|contradict each other|disagree)\s*\??",
     re.IGNORECASE,
 )
 _QUARTER_VALUE_QUERY = re.compile(
@@ -159,7 +191,9 @@ _QUARTER_VALUE_QUERY = re.compile(
 def explicit_financial_claim(question: str) -> Claim | None:
     """Match an explicit single-claim question whose scope is completely specified."""
     question = question.strip()
-    conflict = _GROWTH_CONFLICT_QUERY.fullmatch(question)
+    conflict = _GROWTH_CONFLICT_QUERY.fullmatch(question) or _LEADING_PERCENT_CONFLICT_QUERY.fullmatch(
+        question
+    )
     value = _QUARTER_VALUE_QUERY.fullmatch(question)
     match = conflict or value or _ACCELERATION_QUERY.fullmatch(question)
     if not match or int(match["year"]) < 2022:
