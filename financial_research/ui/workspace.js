@@ -189,7 +189,7 @@ function sidebar(data, state) {
                     [...data.turns].reverse().map(item => button(item.question, "turn", item.id,
                         {"aria-current": String(active.turn_id === item.id)},
                         node("span", {class: "session-turn-meta"},
-                            item.is_follow_up && node("span", {class: "follow-up-label"}, "Follow-up"),
+                            item.is_follow_up ? node("span", {class: "follow-up-label"}, "Follow-up") : null,
                             item.status + (item.mode === "replay" ? " · Replay" : ""),
                             item.created_at && node("time", {datetime: item.created_at,
                                 title: cutoffTime.format(new Date(item.created_at))},

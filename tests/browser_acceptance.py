@@ -166,6 +166,9 @@ def main():
         expect(questions.get_by_role("button").first).to_contain_text("What about operating income?")
         expect(questions.get_by_role("button").first.locator(".follow-up-label")).to_have_text("Follow-up")
         expect(questions.get_by_role("button").last.locator(".follow-up-label")).to_have_count(0)
+        expect(questions.get_by_role("button").last.locator(".session-turn-meta")).not_to_contain_text(
+            "0Complete"
+        )
         expect(questions.locator("time")).to_have_count(2)
         question_section = page.locator("details#session-questions")
         question_toggle = question_section.locator(":scope > summary")

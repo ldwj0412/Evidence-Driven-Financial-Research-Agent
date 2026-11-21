@@ -1,9 +1,73 @@
-# Course assessment
+# Evaluation guide
 
-The [bug and retest log](bug-fix-log.md) records observed failures, fixes, and the checks that verified them.
+The assessment has **10 development cases** and **20 held-out cases**. The tables below show the questions as submitted and the checks that determine a pass. For exact operands, fiscal period ends, tolerances, and eligible citations, see the [assessment catalog](cases.json) and [frozen evidence](evidence.json).
 
-`cases.json` freezes the 10 development questions and the 20 held-out questions, with expected verdicts, allowed citation URLs, period ends, operands, and numerical tolerances. There are seven filing, five event, five conflict, and three uncertainty cases in the held-out split. `evidence.json` contains normalized public facts and selected filing passages. The Microsoft exhibit includes short summaries of the disclosed measurement bases. Release evidence for event cases uses a short source excerpt when available.
+## Recorded results
 
-The replay report measures deterministic verification and the recorded workflow using curated parse and attribution data. Financial scoring checks the value, unit, actual period end, and operand values. Citation scoring checks claim-to-source pairs against the frozen source allowlists. A missing citation on a supported or contradicted finding counts as an error. Assess the model’s live source selection and attribution separately using the credentialed commands in the [project README](../README.md).
+| Run | Cases passing every check | Verdicts | Financial values | Citation pairs |
+| --- | ---: | ---: | ---: | ---: |
+| Final full live run with GPT-6 Luna, November 21, 2026 | 20/20 | 24/24 | 14/14 | 38/38 |
+| Full held-out fixture replay after fixes | 20/20 | 24/24 | 14/14 | 38/38 |
 
-Set `OPENROUTER_API_KEY` for the model comparison. The six-case live smoke suite also needs SEC identification and keys for FRED and Tavily.
+The full live run passed **5/5** conflict cases and **3/3** clarification or uncertainty cases, with **zero unsupported numerical assertions**. C01 and E05 passed in the same run. U01 requested the profit metric and fiscal year, then completed after the evaluator supplied both.
+
+Fixture replay uses frozen evidence and curated parse and attribution results. It exercises the workflow and verifier. Live runs also exercise the configured model and providers. See the [run commands](../README.md#tests-and-course-assessment) and [bug and retest log](bug-fix-log.md).
+
+## Held-out cases
+
+### Filing verification
+
+| ID | Question | Expected check |
+| --- | --- | --- |
+| F01 | Was Apple’s standalone FY2024 Q2 revenue $90.753 billion? | **Supported.** Use the standalone quarter and verify $90.753B. |
+| F02 | Was NVIDIA’s FY2024 revenue $60.922 billion for the year ended January 28, 2024? | **Supported.** Verify $60.922B and use NVIDIA’s fiscal year end. |
+| F03 | Did Amazon’s FY2024 operating income grow more than 80% year over year? | **Supported.** Compute 86.13% growth. |
+| F04 | What was Alphabet’s consolidated operating margin in FY2024? | **Supported.** Compute 32.11% from operating income and revenue. |
+| F05 | How much did Meta’s FY2024 net income grow year over year? | **Supported.** Compute 59.50% growth. |
+| F06 | Did Tesla’s consolidated revenue fall in FY2024 compared with FY2023? | **Contradicted.** Revenue rose 0.95%. |
+| F07 | Was Costco’s diluted EPS $16.56 for its fiscal year ending September 1, 2024? | **Supported.** Verify $16.56 per diluted share for the stated fiscal year. |
+
+### Company events and causation
+
+| ID | Question | Expected check |
+| --- | --- | --- |
+| E01 | What happened when Microsoft released FY2024 results on July 30, 2024, and what was annual revenue growth? | **Supported** for the dated release and the 15.67% annual revenue growth calculation. |
+| E02 | What did NVIDIA announce on February 21, 2024, and how much did FY2024 revenue grow year over year? | **Supported** for the dated release and the 125.85% annual revenue growth calculation. |
+| E03 | When Amazon announced FY2024 results on February 6, 2025, what was the absolute change in annual operating income? | **Supported** for the dated release and the $31.741B increase. |
+| E04 | How did Meta’s annual net income change in the FY2024 results announced January 29, 2025? | **Supported** for the dated release and the $23.262B increase. |
+| E05 | As of August 15, 2024, did Microsoft’s FY2024 revenue growth accelerate, and did June interest rates cause it? | **Supported** for growth of 6.88% and 15.67%, with 8.79 percentage points of acceleration. **Unresolved** for interest-rate causation. |
+
+### Source conflicts
+
+| ID | Question | Expected check |
+| --- | --- | --- |
+| C01 | Do Microsoft’s 16% and 15% FY2024 revenue growth figures contradict each other? | **Contradicted.** 16% is as reported and 15% is in constant currency. |
+| C02 | Are Microsoft’s 24% and 22% FY2024 operating income growth figures inconsistent? | **Contradicted.** 24% is as reported and 22% is adjusted. |
+| C03 | Is Microsoft’s net income growth for FY2024 22% or 20%, and do these conflict? | **Contradicted.** 22% is as reported and 20% is adjusted. |
+| C04 | Do Apple’s FY2024 revenue figures of $391,035 million and $391.035 billion conflict? | **Contradicted.** Both express the same amount at different scales. |
+| C05 | Is Apple’s $90.753 billion of FY2024 Q2 revenue inconsistent with $391.035 billion for the full fiscal year? | **Contradicted.** The figures cover different fiscal periods. |
+
+For these cases, the verdict applies to the claim that the figures conflict.
+
+### Clarification and unavailable evidence
+
+| ID | Question | Expected check |
+| --- | --- | --- |
+| U01 | Did Microsoft’s profit increase? | Ask for the profit metric and fiscal year. Use the prior year for comparison once the user answers. |
+| U02 | As of September 30, 2024, what was Apple’s filed FY2024 annual revenue? | **Unresolved.** The annual filing was unavailable by the cutoff. |
+| U03 | What was Amazon’s FY2023 year-over-year net income growth rate from its FY2022 loss? | **Unresolved.** The growth calculation requires a positive prior-year baseline. |
+
+## Development cases
+
+| ID | Question | Expected check |
+| --- | --- | --- |
+| D01 | Did Microsoft’s revenue growth accelerate in FY2024? | **Supported.** 6.88% and 15.67% growth, with 8.79 percentage points of acceleration. |
+| D02 | Did Microsoft operating income growth accelerate in FY2024? | **Supported.** 6.16% and 23.62% growth, with 17.46 percentage points of acceleration. |
+| D03 | What was Microsoft’s FY2024 gross margin? | **Supported.** 69.76%. |
+| D04 | What was the absolute change in Apple’s diluted EPS between FY2023 and FY2024? | **Supported.** Diluted EPS fell by $0.05 per share. |
+| D05 | What was Alphabet’s FY2024 gross margin using revenue and cost of revenue? | **Supported.** 58.20%, with gross profit derived from revenue less cost of revenue. |
+| D06 | What was Apple’s reported standalone FY2024 Q4 diluted EPS? | **Supported.** Use the directly disclosed $0.97 per share. |
+| D07 | For a Microsoft research report, what was the June 2024 effective federal funds rate using the August 15, 2024 vintage? | **Supported.** 5.33% using the requested FRED vintage. |
+| D08 | Did Microsoft’s profit increase in FY2024? | Ask for the profit metric. The question supplies the year. |
+| D09 | Was Costco’s FY2024 revenue larger than NVIDIA’s FY2024 revenue, each on its own fiscal calendar? | **Supported.** Compare Costco’s $254.453B with NVIDIA’s $60.922B using each company’s fiscal period. |
+| D10 | Can you reconcile a claimed 12% FY2024 Microsoft revenue growth figure with the 16% reported result? | **Unresolved.** The evidence establishes the reported figure and lacks a match for the 12% figure. |
