@@ -109,7 +109,7 @@ function header(data, state) {
     return node("header", {class: "masthead"}, node("div", {class: "shell"},
         node("div", {class: "brandbar"},
             node("div", {class: "brand"}, node("span", {class: "mark", "aria-hidden": "true"},
-                node("i"), node("i"), node("i")), "Financial Research Agent"),
+                node("i"), node("i"), node("i")), data.app_name),
             node("div", {class: "mode-control"}, mode)),
         node("div", {class: "hero"}, node("h1", {}, "Investigate a financial claim"),
             node("p", {class: "intro"}, "Check filings, compare figures, and see the evidence behind each answer."),

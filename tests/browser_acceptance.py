@@ -25,6 +25,10 @@ def main():
         page = browser.new_page(viewport={"width": 1440, "height": 960})
         page.goto(os.environ.get("RESEARCH_TEST_URL", "http://127.0.0.1:8501/"))
         select_fixture_replay(page)
+        app_name = "Evidence-Driven Financial Research Agent"
+        brand = page.locator(".brand")
+        expect(page).to_have_title(app_name)
+        expect(brand).to_have_text(app_name)
         backdrop = page.locator(".research-app .market-texture")
         expect(backdrop).to_have_attribute("aria-hidden", "true")
         form = page.locator("#research-form")
@@ -132,6 +136,11 @@ def main():
         expect(page.locator(".side-facts")).to_have_text(activity)
         expect(step_times).to_have_text(saved_times)
         page.set_viewport_size({"width": 390, "height": 844})
+        mode = page.get_by_role("combobox", name="Research mode")
+        expect(brand).to_be_visible()
+        expect(mode).to_be_visible()
+        brand_box = brand.bounding_box()
+        assert brand_box["x"] + brand_box["width"] < mode.bounding_box()["x"]
         report_card = page.locator(".panel-main").bounding_box()
         assert support.bounding_box()["y"] > report_card["y"] + report_card["height"]
         sidebar_heading = page.get_by_role("heading", name="Research sessions")

@@ -11,8 +11,9 @@ from financial_research.presentation import workspace_view
 from financial_research.service import ResearchService
 
 ASSETS = Path(__file__).with_name("financial_research") / "ui"
+APP_NAME = "Evidence-Driven Financial Research Agent"
 
-st.set_page_config(page_title="Financial Research Agent", layout="wide")
+st.set_page_config(page_title=APP_NAME, layout="wide")
 st.html("""
 <style>
 [data-testid="stHeader"], #MainMenu { display: none; }
@@ -109,6 +110,7 @@ def research_workspace():
         key="research-workspace",
         on_action_change=lambda: None,
         data={
+            "app_name": APP_NAME,
             "mode": st.session_state.mode,
             "selection": selection,
             "sessions": service.store.sessions(),

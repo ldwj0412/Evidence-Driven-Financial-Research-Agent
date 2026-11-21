@@ -105,7 +105,7 @@ a { color: var(--green); text-underline-offset: 3px; }
 .shell { width: min(1280px, calc(100% - 64px)); margin: 0 auto; }
 .brandbar { display: flex; align-items: center; justify-content: space-between; min-height: 62px; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 11px; font-size: .91rem; font-weight: 650; letter-spacing: .015em; }
-.mark { width: 32px; height: 32px; padding: 7px; display: grid; grid-template-rows: repeat(3, 2px); align-content: space-between; background: #145447; border-radius: 8px; }
+.mark { flex: none; width: 32px; height: 32px; padding: 7px; display: grid; grid-template-rows: repeat(3, 2px); align-content: space-between; background: #145447; border-radius: 8px; }
 .mark i { height: 2px; background: #c6e4bc; border-radius: 1px; }
 .mark i:nth-child(2) { width: 72%; }
 .mark i:nth-child(3) { width: 87%; }
